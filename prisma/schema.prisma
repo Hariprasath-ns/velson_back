@@ -19,3 +19,15 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model ReferenceMaster {
+  id             Int      @id @default(autoincrement())
+  referenceType  String
+  code           String
+  description    String
+  updatedBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("reference_master")
+}

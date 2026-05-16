@@ -20,14 +20,118 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+model ReferenceType {
+  id               Int               @id @default(autoincrement())
+  code             String            @unique
+  name             String            @unique
+  createdBy        String?
+  createdAt        DateTime          @default(now())
+  referenceMasters ReferenceMaster[]
+
+  @@map("reference_type")
+}
+
 model ReferenceMaster {
-  id             Int      @id @default(autoincrement())
-  referenceType  String
-  code           String
-  description    String
-  updatedBy      String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              Int            @id @default(autoincrement())
+  referenceType   String
+  referenceTypeId Int?
+  code            String
+  description     String
+  updatedBy       String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  refType         ReferenceType? @relation(fields: [referenceTypeId], references: [id], onDelete: SetNull)
 
   @@map("reference_master")
+}
+
+model TaxLedgerAccount {
+  id         Int         @id @default(autoincrement())
+  ledgerName String      @unique
+  taxPercent Float
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  taxMasters TaxMaster[]
+
+  @@map("tax_ledger_account")
+}
+
+model ItemGroupMaster {
+  id        Int      @id @default(autoincrement())
+  groupName String
+  store     String
+  prefix    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("item_group_master")
+}
+
+model Prefix {
+  id         Int      @id @default(autoincrement())
+  prefixCode String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("prefix")
+}
+
+model TaxMaster {
+  id              Int              @id @default(autoincrement())
+  taxLedgerId     Int
+  taxPercent      Float
+  cgstTax         Float
+  sgstTax         Float
+  igstTax         Float
+  purchaseCgstTax Float
+  purchaseSgstTax Float
+  purchaseIgstTax Float
+  salesCgstTax    Float
+  salesSgstTax    Float
+  salesIgstTax    Float
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  taxLedger       TaxLedgerAccount @relation(fields: [taxLedgerId], references: [id], onDelete: Cascade)
+
+  @@map("tax_master")
+}
+
+model ItemMaster {
+  id              Int      @id @default(autoincrement())
+  groupId         Int?
+  partNo          String   @unique
+  outsourcePartNo String?
+  partName        String
+  modelId         Int?
+  brand           String?
+  description     String?
+  size            String?
+  weight          Float?
+  unitId          Int?
+  hsnCode         String?
+  purchaseRate    Float?
+  marginPercent   Float?
+  rate            Float?
+  currencyId      Int?
+  taxId           Int?
+  subGroupId      Int?
+  storeId         Int?
+  rackNo          String?
+  location        String?
+  itemTypeId      Int?
+  qcTypeId        Int?
+  materialGradeId Int?
+  materialTypeId  Int?
+  rawMaterialId   Int?
+  rmLength        String?
+  rawMaterialWt   Float?
+  fgMaterialWt    Float?
+  reorderLevel    Float?
+  minStock        Float?
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("item_master")
 }

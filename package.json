@@ -10,7 +10,12 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "seed": "node prisma/seed.js",
+    "seedreferencetypename": "node seedreferencetypename.js",
+    "seeditemgroup": "node seedItemGroupMaster.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "repository": {
     "type": "git",

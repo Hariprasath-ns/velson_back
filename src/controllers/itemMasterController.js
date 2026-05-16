@@ -1,4 +1,30 @@
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
+import multer from 'multer';
 import * as ItemMasterModel from '../models/itemMasterModel.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'item-master');
+fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${req.params.id}_${file.fieldname}_${Date.now()}${ext}`);
+  },
+});
+
+export const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.fieldname === 'image') cb(null, /^image\/(jpeg|png|gif|webp)$/.test(file.mimetype));
+    else if (file.fieldname === 'pdf') cb(null, file.mimetype === 'application/pdf');
+    else cb(null, false);
+  },
+});
 
 const parseOptInt   = v => (v !== '' && v != null) ? parseInt(v, 10)   : null;
 const parseOptFloat = v => (v !== '' && v != null) ? parseFloat(v)      : null;
@@ -111,6 +137,44 @@ export const remove = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Item not found' });
     }
     console.error('[itemMaster] delete error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const uploadFiles = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const imagePath = req.files?.image?.[0]
+      ? `/uploads/item-master/${req.files.image[0].filename}` : null;
+    const pdfPath = req.files?.pdf?.[0]
+      ? `/uploads/item-master/${req.files.pdf[0].filename}` : null;
+
+    if (!imagePath && !pdfPath) {
+      return res.status(400).json({ success: false, message: 'No files uploaded' });
+    }
+
+    const updateData = { updatedBy: req.body.updatedBy || 'ADMIN' };
+    if (imagePath) updateData.imagePath = imagePath;
+    if (pdfPath)   updateData.pdfPath   = pdfPath;
+    await ItemMasterModel.updateItemMaster(req.db, id, updateData);
+
+    const record = await ItemMasterModel.createUpload(req.db, {
+      itemId: id, imagePath, pdfPath, updatedBy: req.body.updatedBy || 'ADMIN',
+    });
+    res.json({ success: true, data: record });
+  } catch (err) {
+    console.error('[itemMaster] uploadFiles error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getUploads = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const data = await ItemMasterModel.getUploadsByItemId(req.db, id);
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('[itemMaster] getUploads error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

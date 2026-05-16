@@ -11,6 +11,7 @@ const root = path.resolve(__dirname, '..');
 const scripts = [
   'seedreferencetypename.js',   // 1. Ensure all ReferenceType rows exist
   'seedReferenceMaster.js',     // 2. Seed all ReferenceMaster rows
+  'seedPartNumberBase.js',      // 3. Seed CategoryMaster, SubCategoryMaster, PartNumberBase
 ];
 
 for (const script of scripts) {

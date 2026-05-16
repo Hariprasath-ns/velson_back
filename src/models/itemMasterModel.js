@@ -27,3 +27,9 @@ export const updateItemMaster = (db, id, data) =>
 
 export const deleteItemMaster = (db, id) =>
   db.itemMaster.delete({ where: { id } });
+
+export const createUpload = (db, data) =>
+  db.itemMasterUpload.create({ data });
+
+export const getUploadsByItemId = (db, itemId) =>
+  db.itemMasterUpload.findMany({ where: { itemId }, orderBy: { id: 'asc' } });

@@ -96,10 +96,55 @@ model TaxMaster {
   @@map("tax_master")
 }
 
+model CategoryMaster {
+  id            Int                 @id @default(autoincrement())
+  categoryName  String              @unique
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  subCategories SubCategoryMaster[]
+  partNumbers   PartNumberBase[]
+
+  @@map("category_master")
+}
+
+model SubCategoryMaster {
+  id              Int              @id @default(autoincrement())
+  categoryId      Int
+  subCategoryName String
+  prefixCode      String
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  category        CategoryMaster   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  partNumbers     PartNumberBase[]
+
+  @@unique([categoryId, subCategoryName])
+  @@map("sub_category_master")
+}
+
+model PartNumberBase {
+  id                   Int               @id @default(autoincrement())
+  categoryId           Int
+  subCategoryId        Int
+  prefixCode           String
+  digitCount           Int
+  startingNumber       Int
+  endingNumber         Int
+  currentRunningNumber Int
+  totalNumbers         Int
+  isActive             Boolean           @default(true)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  category             CategoryMaster    @relation(fields: [categoryId], references: [id])
+  subCategory          SubCategoryMaster @relation(fields: [subCategoryId], references: [id])
+
+  @@map("part_number_base")
+}
+
 model ItemMaster {
-  id              Int      @id @default(autoincrement())
+  id              Int                @id @default(autoincrement())
   groupId         Int?
-  partNo          String   @unique
+  partNo          String             @unique
   outsourcePartNo String?
   partName        String
   modelId         Int?
@@ -128,10 +173,26 @@ model ItemMaster {
   fgMaterialWt    Float?
   reorderLevel    Float?
   minStock        Float?
+  imagePath       String?
+  pdfPath         String?
   createdBy       String?
   updatedBy       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  uploads         ItemMasterUpload[]
 
   @@map("item_master")
+}
+
+model ItemMasterUpload {
+  id        Int        @id @default(autoincrement())
+  itemId    Int
+  item      ItemMaster @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  imagePath String?
+  pdfPath   String?
+  updatedBy String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("item_master_upload")
 }

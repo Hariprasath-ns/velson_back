@@ -180,6 +180,7 @@ model ItemMaster {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   uploads         ItemMasterUpload[]
+  quotationDetails QuotationDetail[]
 
   @@map("item_master")
 }
@@ -261,10 +262,92 @@ model CustomerMaster {
   ifscCode      String?
   micrCode      String?
   remarks       String?
-  createdBy     String?
-  updatedBy     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  vehicleMasters   VehicleMaster[]
+  quotations       QuotationMaster[]
 
   @@map("customer_master")
+}
+
+model VehicleMaster {
+  id             Int            @id @default(autoincrement())
+  entryDate      DateTime       @default(now())
+  customerId     Int
+  vehicleCount   Int?           @default(1)
+  address        String?
+  vehicleNumber  String?
+  modelName      String
+  modelSubType   String?
+  vehicleName    String
+  serialNumber   String?
+  bomType        String         @default("New")
+  bomModelNumber String?
+  remarks        String?
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  customer       CustomerMaster @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@map("vehicle_master")
+}
+
+model QuotationMaster {
+  id                Int               @id @default(autoincrement())
+  quotationNo       String            @unique
+  financialYear     String
+  customerId        Int
+  customerRef       String?
+  currencyCode      String?           @default("INR")
+  exchangeRate      Float             @default(1)
+  modelRef          String?
+  taxType           String?
+  quotationDate     DateTime          @default(now())
+  validUntil        DateTime?
+  revisionNo        Int               @default(0)
+  quotationType     String?
+  discountType      String            @default("Dis_Per")
+  showTotalsGrid    Boolean           @default(false)
+  specialDiscount   Float             @default(0)
+  freightAmount     Float             @default(0)
+  taxPercent        Float             @default(18)
+  packingForwarding Float             @default(0)
+  subTotal          Float             @default(0)
+  taxAmount         Float             @default(0)
+  totalAmount       Float             @default(0)
+  paymentTerms      String?
+  documentPath      String?
+  status            String            @default("Draft")
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  customer          CustomerMaster    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  details           QuotationDetail[]
+
+  @@map("quotation_master")
+}
+
+model QuotationDetail {
+  id          Int             @id @default(autoincrement())
+  quotationId Int
+  slNo        Int
+  itemId      Int?
+  partNo      String?
+  itemName    String?
+  description String?
+  hsnCode     String?
+  uom         String?
+  qty         Float           @default(0)
+  unitPrice   Float           @default(0)
+  amount      Float           @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  quotation   QuotationMaster @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  item        ItemMaster?     @relation(fields: [itemId], references: [id], onDelete: SetNull)
+
+  @@map("quotation_detail")
 }

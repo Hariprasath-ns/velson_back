@@ -47,6 +47,7 @@ const REF_TYPE_NAMES = [
   "Material_Type",
   "OUTSOURCE_STATUS_TYPE",
   "OUTSOURCE_TYPE",
+  "Quotation_Type",
   "PAYMODE",
   "PO Status",
   "PO Type",

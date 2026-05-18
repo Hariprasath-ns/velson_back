@@ -1,7 +1,6 @@
 import { PrismaClient } from "./src/generated/prisma/index.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
-import { neonPrisma, dockerPrisma } from "./src/config/db.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -72,6 +71,8 @@ const REF_TYPE_NAMES = [
   "Vehicle_Sub_Type",
   "Vehicle_Type",
   "Warranty_Type",
+  "Supplier_Type",
+  "Customer_Type",
 ];
 
 async function main() {

@@ -17,6 +17,8 @@ import itemMasterRoute from "./routes/itemMasterRoute.js";
 import categoryMasterRoute from "./routes/categoryMasterRoute.js";
 import subCategoryMasterRoute from "./routes/subCategoryMasterRoute.js";
 import partNumberBaseRoute from "./routes/partNumberBaseRoute.js";
+import supplierMasterRoute from "./routes/supplierMasterRoute.js";
+import customerMasterRoute from "./routes/customerMasterRoute.js";
 
 dotenv.config();
 const app = express();
@@ -38,6 +40,8 @@ app.use("/api", itemMasterRoute);
 app.use("/api", categoryMasterRoute);
 app.use("/api", subCategoryMasterRoute);
 app.use("/api", partNumberBaseRoute);
+app.use("/api", supplierMasterRoute);
+app.use("/api", customerMasterRoute);
 
 const PORT = process.env.PORT || 5000;
 

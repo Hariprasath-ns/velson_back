@@ -184,6 +184,41 @@ model ItemMaster {
   @@map("item_master")
 }
 
+model SupplierMaster {
+  id            Int      @id @default(autoincrement())
+  supplierType  String
+  sCode         String   @unique
+  supplierName  String
+  address       String?
+  address2      String?
+  address3      String?
+  address4      String?
+  city          String?
+  country       String?  @default("India")
+  state         String?
+  stateCode     String?
+  pinCode       String?
+  contactPerson String?
+  mobile        String?
+  phone         String?
+  email         String?
+  website       String?
+  gstNo         String?
+  panNo         String?
+  bankName      String?
+  branchName    String?
+  accountName   String?
+  accountNumber String?
+  ifscCode      String?
+  micrCode      String?
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("supplier_master")
+}
+
 model ItemMasterUpload {
   id        Int        @id @default(autoincrement())
   itemId    Int
@@ -195,4 +230,41 @@ model ItemMasterUpload {
   updatedAt DateTime   @updatedAt
 
   @@map("item_master_upload")
+}
+
+model CustomerMaster {
+  id            Int      @id @default(autoincrement())
+  customerType  String
+  cCode         String   @unique
+  customerName  String
+  address       String?
+  address2      String?
+  address3      String?
+  address4      String?
+  city          String?
+  country       String?  @default("India")
+  state         String?
+  stateCode     String?
+  pinCode       String?
+  contactPerson String?
+  mobile        String?
+  phone         String?
+  email         String?
+  website       String?
+  aadharNo      String?
+  gstNo         String?
+  panNo         String?
+  bankName      String?
+  branchName    String?
+  accountName   String?
+  accountNumber String?
+  ifscCode      String?
+  micrCode      String?
+  remarks       String?
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("customer_master")
 }

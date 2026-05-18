@@ -1,6 +1,20 @@
 export const getAllReferenceTypes = (db) =>
   db.referenceType.findMany({ orderBy: { name: "asc" } });
 
+// Looks up reference_type by name (validates the type exists), then returns
+// reference_master values for that type. Uses the string-based referenceType
+// field because legacy records may have referenceTypeId = null.
+export const getValuesByTypeName = async (db, name) => {
+  const refType = await db.referenceType.findUnique({ where: { name } });
+  if (!refType) return [];
+  const values = await db.referenceMaster.findMany({
+    where: { referenceType: name },
+    orderBy: { code: 'asc' },
+    select: { id: true, code: true, description: true },
+  });
+  return values;
+};
+
 export const getReferenceTypeById = (db, id) =>
   db.referenceType.findUnique({ where: { id } });
 

@@ -3,6 +3,7 @@ import { dbSelect } from "../middelwares/dbSelect.js";
 import {
   getAllTypes,
   getTypeById,
+  getValuesByName,
   createType,
   updateType,
   deleteType,
@@ -13,6 +14,7 @@ const router = express.Router();
 router.use(dbSelect);
 
 router.get("/reference-types", getAllTypes);
+router.get("/reference-types/values/:name", getValuesByName);
 router.get("/reference-types/:id", getTypeById);
 router.post("/reference-types", createType);
 router.put("/reference-types/:id", updateType);

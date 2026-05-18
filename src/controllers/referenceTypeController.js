@@ -1,5 +1,16 @@
 import * as ReferenceTypeModel from "../models/referenceTypeModel.js";
 
+export const getValuesByName = async (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name);
+    const values = await ReferenceTypeModel.getValuesByTypeName(req.db, name);
+    res.json({ success: true, data: values });
+  } catch (err) {
+    console.error("[referenceType] getValuesByName error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 export const getAllTypes = async (req, res) => {
   try {
     const data = await ReferenceTypeModel.getAllReferenceTypes(req.db);

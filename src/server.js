@@ -21,6 +21,9 @@ import supplierMasterRoute from "./routes/supplierMasterRoute.js";
 import customerMasterRoute from "./routes/customerMasterRoute.js";
 import vehicleMasterRoute from "./routes/vehicleMasterRoute.js";
 import quotationRoute from "./routes/quotationRoute.js";
+import purchaseRequestRoute from "./routes/purchaseRequestRoute.js";
+import purchaseMasterRoute from "./routes/purchaseMasterRoute.js";
+import gateMasterRoute from "./routes/gateMasterRoute.js";
 
 dotenv.config();
 const app = express();
@@ -46,6 +49,9 @@ app.use("/api", supplierMasterRoute);
 app.use("/api", customerMasterRoute);
 app.use("/api", vehicleMasterRoute);
 app.use("/api", quotationRoute);
+app.use("/api", purchaseRequestRoute);
+app.use("/api", purchaseMasterRoute);
+app.use("/api", gateMasterRoute);
 
 const PORT = process.env.PORT || 5000;
 

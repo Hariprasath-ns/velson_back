@@ -74,6 +74,8 @@ const REF_TYPE_NAMES = [
   "Warranty_Type",
   "Supplier_Type",
   "Customer_Type",
+  "Requesting_for_purchase",
+  "Requesting_for_material",
 ];
 
 async function main() {

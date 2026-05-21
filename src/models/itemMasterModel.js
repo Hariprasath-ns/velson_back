@@ -9,10 +9,22 @@ export const getItemMasters = async (db, { page = 1, limit = 10, search = '' }) 
         ],
       }
     : {};
-  const [data, total] = await Promise.all([
+  const [items, total] = await Promise.all([
     db.itemMaster.findMany({ where, skip, take: Number(limit), orderBy: { id: 'desc' } }),
     db.itemMaster.count({ where }),
   ]);
+
+  const unitIds = [...new Set(items.map(i => i.unitId).filter(Boolean))];
+  let uomMap = {};
+  if (unitIds.length > 0) {
+    const uomRows = await db.referenceMaster.findMany({
+      where: { id: { in: unitIds }, referenceType: 'UOM' },
+      select: { id: true, description: true },
+    });
+    uomMap = Object.fromEntries(uomRows.map(r => [r.id, r.description]));
+  }
+
+  const data = items.map(i => ({ ...i, uom: i.unitId ? (uomMap[i.unitId] ?? '') : '' }));
   return { data, total };
 };
 

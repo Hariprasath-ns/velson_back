@@ -6,6 +6,19 @@ dotenv.config();
 const db = process.env.DB_ENV === "neon" ? neonPrisma : dockerPrisma;
 
 const seedData = [
+  
+    //Requesting for Purchase
+  { referenceType: "Requesting_for_purchase", code: "001", description: "Job Order", updatedBy: "admin" },
+  { referenceType: "Requesting_for_purchase", code: "002", description: "Machine",  updatedBy: "admin" },
+  { referenceType: "Requesting_for_purchase", code: "003", description: "Others",     updatedBy: "admin" },
+
+  //Requesting for material
+  { referenceType: "Requesting_for_material", code: "001", description: "Others", updatedBy: "admin" },
+  { referenceType: "Requesting_for_material", code: "002", description: "Production",  updatedBy: "admin" },
+  { referenceType: "Requesting_for_material", code: "003", description: "Service",     updatedBy: "admin" },
+  { referenceType: "Requesting_for_material", code: "004", description: "Purchase",         updatedBy: "admin" },
+  { referenceType: "Requesting_for_material", code: "004", description: "Sales",       updatedBy: "admin" },
+
   // Account Type
   { referenceType: "Account Type", code: "001", description: "ACCOUNTS",        updatedBy: "ADMIN" },
   { referenceType: "Account Type", code: "002", description: "GODOWN",           updatedBy: "ADMIN" },

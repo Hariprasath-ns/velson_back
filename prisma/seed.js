@@ -10,10 +10,13 @@ const root = path.resolve(__dirname, '..');
 
 const scripts = [
   'seedreferencetypename.js',   // 1. Ensure all ReferenceType rows exist
-  'seedReferenceMaster.js',     // 2. Seed all ReferenceMaster rows
+  'seedReferenceMaster.js',     // 2. Seed all ReferenceMaster rows (Department, Team, UOM, etc.)
   'seedPartNumberBase.js',      // 3. Seed CategoryMaster, SubCategoryMaster, PartNumberBase
-  'seedSupplierMaster.js',      // 4. Seed Supplier_Type entries + 5 mock supplier records
-  'seedCustomerMaster.js',      // 5. Seed Customer_Type entries + 4 mock customer records
+  'seedSupplierMaster.js',      // 4. Seed Supplier_Type entries + supplier records
+  'seedCustomerMaster.js',      // 5. Seed Customer_Type entries + customer records
+  'seedItemMaster.js',          // 6. Seed ItemMaster — main production parts + mock items
+  'seedPurchaseRequest.js',     // 7. Seed PurchaseRequest + details (main + mock)
+  'seedPurchaseMaster.js',      // 8. Seed PurchaseMaster (PO) + details (main + mock)
 ];
 
 for (const script of scripts) {

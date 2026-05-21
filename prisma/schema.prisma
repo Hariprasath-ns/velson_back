@@ -42,6 +42,10 @@ model ReferenceMaster {
   updatedAt       DateTime       @updatedAt
   refType         ReferenceType? @relation(fields: [referenceTypeId], references: [id], onDelete: SetNull)
 
+  purchaseRequestsByDept         PurchaseRequest[] @relation("PRDepartmentRef")
+  purchaseRequestsByTeam         PurchaseRequest[] @relation("PRTeamRef")
+  purchaseRequestsByRequestingFor PurchaseRequest[] @relation("PRRequestingForRef")
+
   @@map("reference_master")
 }
 
@@ -179,43 +183,46 @@ model ItemMaster {
   updatedBy       String?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
-  uploads         ItemMasterUpload[]
-  quotationDetails QuotationDetail[]
+  uploads                ItemMasterUpload[]
+  quotationDetails       QuotationDetail[]
+  purchaseRequestDetails PurchaseRequestDetail[]
+  purchaseDetails        PurchaseDetail[]
 
   @@map("item_master")
 }
 
 model SupplierMaster {
-  id            Int      @id @default(autoincrement())
-  supplierType  String
-  sCode         String   @unique
-  supplierName  String
-  address       String?
-  address2      String?
-  address3      String?
-  address4      String?
-  city          String?
-  country       String?  @default("India")
-  state         String?
-  stateCode     String?
-  pinCode       String?
-  contactPerson String?
-  mobile        String?
-  phone         String?
-  email         String?
-  website       String?
-  gstNo         String?
-  panNo         String?
-  bankName      String?
-  branchName    String?
-  accountName   String?
-  accountNumber String?
-  ifscCode      String?
-  micrCode      String?
-  createdBy     String?
-  updatedBy     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              Int              @id @default(autoincrement())
+  supplierType    String
+  sCode           String           @unique
+  supplierName    String
+  address         String?
+  address2        String?
+  address3        String?
+  address4        String?
+  city            String?
+  country         String?          @default("India")
+  state           String?
+  stateCode       String?
+  pinCode         String?
+  contactPerson   String?
+  mobile          String?
+  phone           String?
+  email           String?
+  website         String?
+  gstNo           String?
+  panNo           String?
+  bankName        String?
+  branchName      String?
+  accountName     String?
+  accountNumber   String?
+  ifscCode        String?
+  micrCode        String?
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  purchaseOrders  PurchaseMaster[]
 
   @@map("supplier_master")
 }
@@ -350,4 +357,174 @@ model QuotationDetail {
   item        ItemMaster?     @relation(fields: [itemId], references: [id], onDelete: SetNull)
 
   @@map("quotation_detail")
+}
+
+model PurchaseRequest {
+  id             Int                     @id @default(autoincrement())
+  prNo           String                  @unique
+  financialYear  String
+  prDate         DateTime                @default(now())
+  requiredDate   DateTime?
+  department     String?
+  departmentId   Int?
+  requestingUser String?
+  team           String?
+  teamId         Int?
+  requestingFor   String?
+  requestingForId Int?
+  remarks         String?
+  status          String                  @default("Draft")
+  poNo            String?
+  poDate          DateTime?
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  details             PurchaseRequestDetail[]
+  departmentRef       ReferenceMaster?        @relation("PRDepartmentRef", fields: [departmentId], references: [id], onDelete: SetNull)
+  teamRef             ReferenceMaster?        @relation("PRTeamRef", fields: [teamId], references: [id], onDelete: SetNull)
+  requestingForRef    ReferenceMaster?        @relation("PRRequestingForRef", fields: [requestingForId], references: [id], onDelete: SetNull)
+
+  @@map("purchase_request")
+}
+
+model PurchaseRequestDetail {
+  id            Int             @id @default(autoincrement())
+  prId          Int
+  slNo          Int
+  itemId        Int?
+  itemCode      String?
+  itemName      String?
+  specification String?
+  jobNo         String?
+  machineNo     String?
+  uom           String?
+  qty           Float           @default(0)
+  eta           DateTime?
+  purpose       String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  pr            PurchaseRequest @relation(fields: [prId], references: [id], onDelete: Cascade)
+  item          ItemMaster?     @relation(fields: [itemId], references: [id], onDelete: SetNull)
+
+  @@map("purchase_request_detail")
+}
+
+model PurchaseMaster {
+  id              Int             @id @default(autoincrement())
+  poNo            String          @unique
+  financialYear   String
+  poDate          DateTime        @default(now())
+  etaDate         DateTime?
+  poType          String          @default("Purchase Order")
+  supplierId      Int?
+  contactPerson   String?
+  supplierAddress String?
+  gstNo           String?
+  supplierRefNo   String?
+  discountType    String          @default("Dis_Per")
+  freight         Float           @default(0)
+  destination     String?
+  paymentTerms    String?
+  testReport      String?
+  project         String?
+  modeOfDespatch  String?
+  deliveryPeriod  String?
+  taxTerms        String?
+  warrantyTerms   String?
+  discountTerms   String?
+  remarks         String?
+  subTotal        Float           @default(0)
+  cgstPer         Float           @default(0)
+  cgstAmt         Float           @default(0)
+  sgstPer         Float           @default(0)
+  sgstAmt         Float           @default(0)
+  igstPer         Float           @default(0)
+  igstAmt         Float           @default(0)
+  othersPer       Float           @default(0)
+  othersAmt       Float           @default(0)
+  totalAmount     Float           @default(0)
+  status          String          @default("Draft")
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  supplier        SupplierMaster? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  details         PurchaseDetail[]
+
+  @@map("purchase_master")
+}
+
+model PurchaseDetail {
+  id             Int            @id @default(autoincrement())
+  poId           Int
+  slNo           Int
+  itemId         Int?
+  purchaseReqNo  String?
+  supplierPartNo String?
+  itemCode       String?
+  itemName       String?
+  description    String?
+  hsnCode        String?
+  uom            String?
+  qty            Float          @default(0)
+  unitPrice      Float          @default(0)
+  discPer        Float          @default(0)
+  discAmt        Float          @default(0)
+  amount         Float          @default(0)
+  gstPer         Float          @default(0)
+  gstAmt         Float          @default(0)
+  netAmt         Float          @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  po             PurchaseMaster @relation(fields: [poId], references: [id], onDelete: Cascade)
+  item           ItemMaster?    @relation(fields: [itemId], references: [id], onDelete: SetNull)
+
+  @@map("purchase_detail")
+}
+
+model GateMaster {
+  id              Int          @id @default(autoincrement())
+  gateEntryNo     String       @unique
+  financialYear   String       @default("")
+  gateEntryDate   DateTime     @default(now())
+  poId            Int?
+  poNo            String?
+  prqNo           String?
+  supplierName    String?
+  supplierAddress String?
+  gateNo          String?
+  carrierName     String?
+  vehicleNo       String?
+  invoiceNo       String?
+  invoiceDate     DateTime?
+  remarks         String?
+  status          String       @default("Open")
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  details         GateDetail[]
+
+  @@map("gate_master")
+}
+
+model GateDetail {
+  id             Int        @id @default(autoincrement())
+  gateId         Int
+  slNo           Int
+  poNo           String?
+  itemCode       String?
+  itemName       String?
+  supplierPartNo String?
+  description    String?
+  hsnCode        String?
+  unit           String?
+  qty            Float      @default(0)
+  recQty         Float      @default(0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  gate           GateMaster @relation(fields: [gateId], references: [id], onDelete: Cascade)
+
+  @@map("gate_detail")
 }

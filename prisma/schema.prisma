@@ -612,3 +612,69 @@ model GateDetail {
 
   @@map("gate_detail")
 }
+
+model GRNMaster {
+  id             Int         @id @default(autoincrement())
+  grnNo          String      @unique
+  financialYear  String      @default("")
+  grnDate        DateTime    @default(now())
+  grnType        String?
+  gateEntryNo    String?
+  supplierName   String?
+  contactPerson  String?
+  contactNo      String?
+  purchaseLedger String?
+  purchaseType   String?
+  currency       String?
+  currencyType   String?
+  poNo           String?
+  poDate         DateTime?
+  taxType        String?
+  exchangeRate   Float       @default(0)
+  invoiceNo      String?
+  invoiceDate    DateTime?
+  qcType         String?
+  discountType   String      @default("Dis_Per")
+  remarks        String?
+  currencyTotal  Float       @default(0)
+  roundOff       Float       @default(0)
+  freightLedger  String?
+  tcsLedger      String?
+  subTotal       Float       @default(0)
+  totalAmount    Float       @default(0)
+  status         String      @default("Open")
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  details        GRNDetail[]
+
+  @@map("grn_master")
+}
+
+model GRNDetail {
+  id             Int       @id @default(autoincrement())
+  grnId          Int
+  slNo           Int
+  itemCode       String?
+  itemName       String?
+  supplierPartNo String?
+  description    String?
+  hsnCode        String?
+  unit           String?
+  stockQty       Float     @default(0)
+  orderQty       Float     @default(0)
+  qty            Float     @default(0)
+  unitPrice      Float     @default(0)
+  total          Float     @default(0)
+  discPer        Float     @default(0)
+  discAmt        Float     @default(0)
+  finalPrice     Float     @default(0)
+  taxPer         Float     @default(0)
+  netAmt         Float     @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  grn            GRNMaster @relation(fields: [grnId], references: [id], onDelete: Cascade)
+
+  @@map("grn_detail")
+}

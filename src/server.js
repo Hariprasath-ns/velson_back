@@ -24,6 +24,7 @@ import quotationRoute from "./routes/quotationRoute.js";
 import purchaseRequestRoute from "./routes/purchaseRequestRoute.js";
 import purchaseMasterRoute from "./routes/purchaseMasterRoute.js";
 import gateMasterRoute from "./routes/gateMasterRoute.js";
+import grnMasterRoute from "./routes/grnMasterRoute.js";
 import companyMasterRoute from "./routes/companyMasterRoute.js";
 import employeeMasterRoute from "./routes/employeeMasterRoute.js";
 
@@ -54,6 +55,7 @@ app.use("/api", quotationRoute);
 app.use("/api", purchaseRequestRoute);
 app.use("/api", purchaseMasterRoute);
 app.use("/api", gateMasterRoute);
+app.use("/api", grnMasterRoute);
 app.use("/api", companyMasterRoute);
 app.use("/api", employeeMasterRoute);
 

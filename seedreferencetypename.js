@@ -16,12 +16,14 @@ const prisma = new PrismaClient({
 });
 
 const REF_TYPE_NAMES = [
+
   "Account Type",
   "App_User",
   "Area",
   "Booking_Status",
   "Booking_Vehicle_Name",
   "Breakdown_Email",
+  "Company_Type",
   "Conformation_Part_Description",
   "Conformation_Type",
   "Currency",
@@ -32,6 +34,7 @@ const REF_TYPE_NAMES = [
   "Form",
   "Freight",
   "GRN_Inward_Type",
+  "GRN_Type",
   "Inward_Type",
   "Item Category",
   "Item Expiry",
@@ -54,6 +57,8 @@ const REF_TYPE_NAMES = [
   "Print_Copy",
   "Priority",
   "Process_Type",
+  "Purchase_Ledger",
+  "Purchase_Type",
   "QC_Inspection_Type",
   "QC_STATUS",
   "QC_Type",

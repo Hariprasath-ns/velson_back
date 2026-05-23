@@ -7,15 +7,15 @@ export const getCompanyById = (db, id) =>
 export const getNextCompanyCode = async (db) => {
   const rows = await db.$queryRaw`
     SELECT "companyCode" FROM company_master
-    WHERE "companyCode" ~ '^COMP[0-9]+$'
-    ORDER BY CAST(SUBSTRING("companyCode" FROM 5) AS INTEGER) DESC
+    WHERE "companyCode" ~ '^C[0-9]+$'
+    ORDER BY CAST(SUBSTRING("companyCode" FROM 2) AS INTEGER) DESC
     LIMIT 1
   `;
   if (rows.length > 0) {
-    const num = parseInt(rows[0].companyCode.replace('COMP', ''), 10);
-    return 'COMP' + String(num + 1);
+    const num = parseInt(rows[0].companyCode.replace('C', ''), 10);
+    return 'C' + String(num + 1).padStart(3, '0');
   }
-  return 'COMP100';
+  return 'C001';
 };
 
 export const createCompany = (db, data) =>

@@ -612,3 +612,19 @@ model GateDetail {
 
   @@map("gate_detail")
 }
+
+model ContractorMaster {
+  id             Int      @id @default(autoincrement())
+  contractCode   String   @unique
+  contractName   String
+  address        String?
+  phone          String?
+  email          String?
+  status         String   @default("Active")
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("contractor_master")
+}

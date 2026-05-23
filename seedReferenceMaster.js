@@ -6,6 +6,19 @@ dotenv.config();
 const db = process.env.DB_ENV === "neon" ? neonPrisma : dockerPrisma;
 
 const seedData = [
+  //GRN Type
+  { referenceType: "GRN_Type", code: "001", description: "GRN against PO", updatedBy: "admin" },
+  { referenceType: "GRN_Type", code: "002", description: "Direct PO", updatedBy: "admin" },
+  
+  // Purchase_Ledger
+  { referenceType: "Purchase_Ledger", code: "001", description: "Velson Account", updatedBy: "admin" },
+  { referenceType: "Purchase_Ledger", code: "002", description: "Purchase Account", updatedBy: "admin" }, 
+  // Purchase_Type
+  { referenceType: "Purchase_Type", code: "001", description: "Cash", updatedBy: "admin" },
+  { referenceType: "Purchase_Type", code: "002", description: "Credit", updatedBy: "admin" },
+  //Company Type
+  { referenceType: "Company_Type", code: "001", description: "Branch", updatedBy: "admin" },
+  { referenceType: "Company_Type", code: "002", description: "Main", updatedBy: "admin" },
   
     //Requesting for Purchase
   { referenceType: "Requesting_for_purchase", code: "001", description: "Job Order", updatedBy: "admin" },

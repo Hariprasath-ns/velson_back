@@ -68,7 +68,7 @@ export const create = async (req, res) => {
   try {
     const {
       poNo, financialYear, poDate, etaDate, poType,
-      supplierId, contactPerson, supplierAddress, gstNo, supplierRefNo,
+      supplierId, contactPerson, contactNumber, supplierAddress, gstNo, supplierRefNo,
       discountType, freight, destination, paymentTerms, testReport,
       project, modeOfDespatch, deliveryPeriod, taxTerms, warrantyTerms,
       discountTerms, remarks,
@@ -89,6 +89,7 @@ export const create = async (req, res) => {
       poType:         poType         || 'Purchase Order',
       supplierId:     supplierId ? parseInt(supplierId, 10) : null,
       contactPerson:  contactPerson  || null,
+      contactNumber:  contactNumber  || null,
       supplierAddress: supplierAddress || null,
       gstNo:          gstNo          || null,
       supplierRefNo:  supplierRefNo  || null,
@@ -138,7 +139,7 @@ export const update = async (req, res) => {
     const id = parseInt(req.params.id, 10);
     const {
       poDate, etaDate, poType,
-      supplierId, contactPerson, supplierAddress, gstNo, supplierRefNo,
+      supplierId, contactPerson, contactNumber, supplierAddress, gstNo, supplierRefNo,
       discountType, freight, destination, paymentTerms, testReport,
       project, modeOfDespatch, deliveryPeriod, taxTerms, warrantyTerms,
       discountTerms, remarks,
@@ -151,8 +152,9 @@ export const update = async (req, res) => {
       poDate:         poDate ? new Date(poDate) : new Date(),
       etaDate:        etaDate ? new Date(etaDate) : null,
       poType:         poType         || 'Purchase Order',
-      supplierId:     supplierId ? parseInt(supplierId, 10) : null,
+      supplier:       supplierId ? { connect: { id: parseInt(supplierId, 10) } } : { disconnect: true },
       contactPerson:  contactPerson  || null,
+      contactNumber:  contactNumber  || null,
       supplierAddress: supplierAddress || null,
       gstNo:          gstNo          || null,
       supplierRefNo:  supplierRefNo  || null,

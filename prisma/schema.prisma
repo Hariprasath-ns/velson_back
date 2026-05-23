@@ -694,3 +694,44 @@ model GRNDetail {
 
   @@map("grn_detail")
 }
+
+model MachineMaster {
+  id                 Int       @id @default(autoincrement())
+  machineCode        String    @unique
+  machineName        String
+  serialNo           String?
+  machineCategoryId  String?
+  workHoursPerDay    String?
+  model              String?
+  country            String?
+  currency           String?
+  vendorId           String?
+  installationPlace  String?
+  remarks            String?
+  yearOfFG           DateTime?
+  dateOfPurchase     DateTime?
+  dateOfInstallation DateTime?
+  warantyExpDate     DateTime?
+  amcExpDate         DateTime?
+  status             String    @default("Active")
+  createdBy          String?
+  updatedBy          String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@map("machine_master")
+}
+
+model VehicleServiceMaster {
+  id             Int      @id @default(autoincrement())
+  vehicleTypeId  String
+  serviceName    String
+  labourCharge   Float    @default(0)
+  materialCharge Float    @default(0)
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("vehicle_service_master")
+}

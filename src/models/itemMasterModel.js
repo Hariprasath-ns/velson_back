@@ -15,16 +15,32 @@ export const getItemMasters = async (db, { page = 1, limit = 10, search = '' }) 
   ]);
 
   const unitIds = [...new Set(items.map(i => i.unitId).filter(Boolean))];
+  const gradeIds = [...new Set(items.map(i => i.materialGradeId).filter(Boolean))];
+
   let uomMap = {};
+  let gradeMap = {};
+
   if (unitIds.length > 0) {
     const uomRows = await db.referenceMaster.findMany({
-      where: { id: { in: unitIds }, referenceType: 'UOM' },
+      where: { id: { in: unitIds } },
       select: { id: true, description: true },
     });
     uomMap = Object.fromEntries(uomRows.map(r => [r.id, r.description]));
   }
 
-  const data = items.map(i => ({ ...i, uom: i.unitId ? (uomMap[i.unitId] ?? '') : '' }));
+  if (gradeIds.length > 0) {
+    const gradeRows = await db.referenceMaster.findMany({
+      where: { id: { in: gradeIds } },
+      select: { id: true, description: true },
+    });
+    gradeMap = Object.fromEntries(gradeRows.map(r => [r.id, r.description]));
+  }
+
+  const data = items.map(i => ({
+    ...i,
+    uom:               i.unitId          ? (uomMap[i.unitId]      ?? '') : '',
+    materialGradeName: i.materialGradeId ? (gradeMap[i.materialGradeId] ?? '') : '',
+  }));
   return { data, total };
 };
 

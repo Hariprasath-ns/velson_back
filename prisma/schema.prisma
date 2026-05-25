@@ -735,3 +735,46 @@ model VehicleServiceMaster {
 
   @@map("vehicle_service_master")
 }
+
+model MaterialRequest {
+  id             Int                     @id @default(autoincrement())
+  mrNo           String                  @unique
+  financialYear  String
+  tempRequestNo  String?
+  departmentTo   String?
+  requestingUser String?
+  team           String?
+  requestingFor  String?
+  requestDate    DateTime                @default(now())
+  requiredDate   DateTime?
+  requiredDays   String?
+  storeName      String?
+  bomPartName    String?
+  remarks        String?
+  status         String                  @default("Draft")
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  details        MaterialRequestDetail[]
+
+  @@map("material_request")
+}
+
+model MaterialRequestDetail {
+  id            Int             @id @default(autoincrement())
+  mrId          Int
+  slNo          Int
+  modelName     String?
+  itemCode      String?
+  itemName      String?
+  requestedQty  Float           @default(0)
+  materialGrade String?
+  unit          String?
+  remarks       String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  mr            MaterialRequest @relation(fields: [mrId], references: [id], onDelete: Cascade)
+
+  @@map("material_request_detail")
+}

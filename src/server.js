@@ -30,6 +30,7 @@ import employeeMasterRoute from "./routes/employeeMasterRoute.js";
 import contractorMasterRoute from "./routes/contractorMasterRoute.js";
 import machineMasterRoute from "./routes/machineMasterRoute.js";
 import vehicleServiceMasterRoute from "./routes/vehicleServiceMasterRoute.js";
+import materialRequestRoute from "./routes/materialRequestRoute.js";
 
 dotenv.config();
 const app = express();
@@ -64,6 +65,7 @@ app.use("/api", employeeMasterRoute);
 app.use("/api", contractorMasterRoute);
 app.use("/api", machineMasterRoute);
 app.use("/api", vehicleServiceMasterRoute);
+app.use("/api", materialRequestRoute);
 
 const PORT = process.env.PORT || 5000;
 

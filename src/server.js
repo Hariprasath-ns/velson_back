@@ -6,6 +6,9 @@ import cors from "cors";
 import morgan from "morgan";
 
 import { checkConnections } from "./config/db.js";
+import { authenticate } from "./middelwares/auth.js";
+
+import authRoute from "./routes/authRoute.js";
 import userRoute from "./routes/userRoute.js";
 import referenceMasterRoute from "./routes/referenceMasterRoute.js";
 import referenceTypeRoute from "./routes/referenceTypeRoute.js";
@@ -40,6 +43,12 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(cors());
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+
+// Public route — no token required
+app.use("/api/auth", authRoute);
+
+// All routes below this point require a valid JWT
+app.use("/api", authenticate);
 
 app.use("/api", userRoute);
 app.use("/api", referenceMasterRoute);

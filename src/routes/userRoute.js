@@ -1,5 +1,7 @@
 import express from "express";
 import { dbSelect } from "../middelwares/dbSelect.js";
+import { authenticate } from "../middelwares/auth.js";
+import { authorize } from "../middelwares/authorize.js";
 import {
   getUsers,
   getUser,
@@ -12,10 +14,11 @@ const router = express.Router();
 
 router.use(dbSelect);
 
-router.get("/users", getUsers);
-router.get("/users/:id", getUser);
-router.post("/users", createUser);
-router.put("/users/:id", updateUser);
-router.delete("/users/:id", deleteUser);
+// Only admin can manage users
+router.get("/users",        authenticate, authorize("admin"), getUsers);
+router.get("/users/:id",    authenticate, authorize("admin"), getUser);
+router.post("/users",       authenticate, authorize("admin"), createUser);
+router.put("/users/:id",    authenticate, authorize("admin"), updateUser);
+router.delete("/users/:id", authenticate, authorize("admin"), deleteUser);
 
 export default router;

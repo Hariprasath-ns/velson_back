@@ -1,5 +1,5 @@
 -- CreateTable: grn_master
-CREATE TABLE "grn_master" (
+CREATE TABLE IF NOT EXISTS "grn_master" (
     "id"             SERIAL           NOT NULL,
     "grnNo"          TEXT             NOT NULL,
     "financialYear"  TEXT             NOT NULL DEFAULT '',
@@ -32,13 +32,13 @@ CREATE TABLE "grn_master" (
     "createdBy"      TEXT,
     "updatedBy"      TEXT,
     "createdAt"      TIMESTAMP(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt"      TIMESTAMP(3)     NOT NULL,
+    "updatedAt"      TIMESTAMP(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "grn_master_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable: grn_detail
-CREATE TABLE "grn_detail" (
+CREATE TABLE IF NOT EXISTS "grn_detail" (
     "id"             SERIAL           NOT NULL,
     "grnId"          INTEGER          NOT NULL,
     "slNo"           INTEGER          NOT NULL,
@@ -59,14 +59,16 @@ CREATE TABLE "grn_detail" (
     "taxPer"         DOUBLE PRECISION NOT NULL DEFAULT 0,
     "netAmt"         DOUBLE PRECISION NOT NULL DEFAULT 0,
     "createdAt"      TIMESTAMP(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt"      TIMESTAMP(3)     NOT NULL,
+    "updatedAt"      TIMESTAMP(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "grn_detail_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "grn_master_grnNo_key" ON "grn_master"("grnNo");
+CREATE UNIQUE INDEX IF NOT EXISTS "grn_master_grnNo_key" ON "grn_master"("grnNo");
 
--- AddForeignKey
-ALTER TABLE "grn_detail" ADD CONSTRAINT "grn_detail_grnId_fkey"
-    FOREIGN KEY ("grnId") REFERENCES "grn_master"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'grn_detail_grnId_fkey') THEN
+    ALTER TABLE "grn_detail" ADD CONSTRAINT "grn_detail_grnId_fkey"
+        FOREIGN KEY ("grnId") REFERENCES "grn_master"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;

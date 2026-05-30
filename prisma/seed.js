@@ -9,6 +9,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 
 const scripts = [
+  'seedSupplierType.js',      // 0. Seed Supplier_Type entries (for categorizing suppliers)
+  'seedQuotation.js',        // 0. Seed QuoteMaster + details (main + mock)
+  'seedItemGroupMaster.js',     // 0. Seed ItemGroupMaster (for grouping items in UI)
+  'seedPrefix.js',             // 0. Seed ReferencePrefix entries (for generating codes like PR-0001)
+  'seedAuthUser.js',             // 0. Seed User + Role + Permission entries (for auth + testing)
   'seedreferencetypename.js',   // 1. Ensure all ReferenceType rows exist
   'seedReferenceMaster.js',     // 2. Seed all ReferenceMaster rows (Department, Team, UOM, etc.)
   'seedPartNumberBase.js',      // 3. Seed CategoryMaster, SubCategoryMaster, PartNumberBase

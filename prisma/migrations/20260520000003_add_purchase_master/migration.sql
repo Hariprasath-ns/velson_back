@@ -1,5 +1,5 @@
 -- CreateTable: purchase_master
-CREATE TABLE "purchase_master" (
+CREATE TABLE IF NOT EXISTS "purchase_master" (
     "id"              SERIAL           NOT NULL,
     "poNo"            TEXT             NOT NULL,
     "financialYear"   TEXT             NOT NULL,
@@ -8,6 +8,7 @@ CREATE TABLE "purchase_master" (
     "poType"          TEXT             NOT NULL DEFAULT 'Purchase Order',
     "supplierId"      INTEGER,
     "contactPerson"   TEXT,
+    "contactNumber"   TEXT,
     "supplierAddress" TEXT,
     "gstNo"           TEXT,
     "supplierRefNo"   TEXT,
@@ -37,13 +38,13 @@ CREATE TABLE "purchase_master" (
     "createdBy"       TEXT,
     "updatedBy"       TEXT,
     "createdAt"       TIMESTAMP(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt"       TIMESTAMP(3)     NOT NULL,
+    "updatedAt"       TIMESTAMP(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "purchase_master_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable: purchase_detail
-CREATE TABLE "purchase_detail" (
+CREATE TABLE IF NOT EXISTS "purchase_detail" (
     "id"             SERIAL           NOT NULL,
     "poId"           INTEGER          NOT NULL,
     "slNo"           INTEGER          NOT NULL,
@@ -64,22 +65,30 @@ CREATE TABLE "purchase_detail" (
     "gstAmt"         DOUBLE PRECISION NOT NULL DEFAULT 0,
     "netAmt"         DOUBLE PRECISION NOT NULL DEFAULT 0,
     "createdAt"      TIMESTAMP(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt"      TIMESTAMP(3)     NOT NULL,
+    "updatedAt"      TIMESTAMP(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "purchase_detail_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "purchase_master_poNo_key" ON "purchase_master"("poNo");
+CREATE UNIQUE INDEX IF NOT EXISTS "purchase_master_poNo_key" ON "purchase_master"("poNo");
 
--- AddForeignKey
-ALTER TABLE "purchase_master" ADD CONSTRAINT "purchase_master_supplierId_fkey"
-    FOREIGN KEY ("supplierId") REFERENCES "supplier_master"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'purchase_master_supplierId_fkey') THEN
+    ALTER TABLE "purchase_master" ADD CONSTRAINT "purchase_master_supplierId_fkey"
+        FOREIGN KEY ("supplierId") REFERENCES "supplier_master"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "purchase_detail" ADD CONSTRAINT "purchase_detail_poId_fkey"
-    FOREIGN KEY ("poId") REFERENCES "purchase_master"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'purchase_detail_poId_fkey') THEN
+    ALTER TABLE "purchase_detail" ADD CONSTRAINT "purchase_detail_poId_fkey"
+        FOREIGN KEY ("poId") REFERENCES "purchase_master"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "purchase_detail" ADD CONSTRAINT "purchase_detail_itemId_fkey"
-    FOREIGN KEY ("itemId") REFERENCES "item_master"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'purchase_detail_itemId_fkey') THEN
+    ALTER TABLE "purchase_detail" ADD CONSTRAINT "purchase_detail_itemId_fkey"
+        FOREIGN KEY ("itemId") REFERENCES "item_master"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;

@@ -1,6 +1,6 @@
-CREATE TABLE "machine_master" (
+CREATE TABLE IF NOT EXISTS "machine_master" (
     "id"                 SERIAL PRIMARY KEY,
-    "machineCode"        TEXT NOT NULL UNIQUE,
+    "machineCode"        TEXT NOT NULL,
     "machineName"        TEXT NOT NULL,
     "serialNo"           TEXT,
     "machineCategoryId"  TEXT,
@@ -22,3 +22,5 @@ CREATE TABLE "machine_master" (
     "createdAt"          TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt"          TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS "machine_master_machineCode_key" ON "machine_master"("machineCode");

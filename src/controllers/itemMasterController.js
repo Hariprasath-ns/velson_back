@@ -60,6 +60,8 @@ const buildData = (body) => ({
   fgMaterialWt:    parseOptFloat(body.fgMaterialWt),
   reorderLevel:    parseOptFloat(body.reorderLevel),
   minStock:        parseOptFloat(body.minStock),
+  imagePath:       body.imagePath  || null,
+  pdfPath:         body.pdfPath    || null,
   createdBy:       body.createdBy || 'ADMIN',
   updatedBy:       body.updatedBy || 'ADMIN',
 });

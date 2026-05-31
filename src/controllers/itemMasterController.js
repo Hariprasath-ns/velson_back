@@ -1,20 +1,9 @@
 import { fileURLToPath } from 'url';
 import path from 'path';
-import fs from 'fs';
 import multer from 'multer';
 import * as ItemMasterModel from '../models/itemMasterModel.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'item-master');
-fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${req.params.id}_${file.fieldname}_${Date.now()}${ext}`);
-  },
-});
+const storage = multer.memoryStorage();
 
 export const upload = multer({
   storage,
@@ -61,7 +50,11 @@ const buildData = (body) => ({
   reorderLevel:    parseOptFloat(body.reorderLevel),
   minStock:        parseOptFloat(body.minStock),
   imagePath:       body.imagePath  || null,
+  imageData:       body.imageData  || null,
+  imageMimeType:   body.imageMimeType || null,
   pdfPath:         body.pdfPath    || null,
+  pdfData:         body.pdfData    || null,
+  pdfMimeType:     body.pdfMimeType || null,
   createdBy:       body.createdBy || 'ADMIN',
   updatedBy:       body.updatedBy || 'ADMIN',
 });
@@ -146,22 +139,32 @@ export const remove = async (req, res) => {
 export const uploadFiles = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const imagePath = req.files?.image?.[0]
-      ? `/uploads/item-master/${req.files.image[0].filename}` : null;
-    const pdfPath = req.files?.pdf?.[0]
-      ? `/uploads/item-master/${req.files.pdf[0].filename}` : null;
+    
+    const updateData = { updatedBy: req.body.updatedBy || 'ADMIN' };
+    
+    if (req.files?.image?.[0]) {
+      updateData.imageData = req.files.image[0].buffer;
+      updateData.imageMimeType = req.files.image[0].mimetype;
+    }
+    
+    if (req.files?.pdf?.[0]) {
+      updateData.pdfData = req.files.pdf[0].buffer;
+      updateData.pdfMimeType = req.files.pdf[0].mimetype;
+    }
 
-    if (!imagePath && !pdfPath) {
+    if (!req.files?.image?.[0] && !req.files?.pdf?.[0]) {
       return res.status(400).json({ success: false, message: 'No files uploaded' });
     }
 
-    const updateData = { updatedBy: req.body.updatedBy || 'ADMIN' };
-    if (imagePath) updateData.imagePath = imagePath;
-    if (pdfPath)   updateData.pdfPath   = pdfPath;
     await ItemMasterModel.updateItemMaster(req.db, id, updateData);
 
     const record = await ItemMasterModel.createUpload(req.db, {
-      itemId: id, imagePath, pdfPath, updatedBy: req.body.updatedBy || 'ADMIN',
+      itemId: id,
+      imageData: req.files?.image?.[0]?.buffer || null,
+      imageMimeType: req.files?.image?.[0]?.mimetype || null,
+      pdfData: req.files?.pdf?.[0]?.buffer || null,
+      pdfMimeType: req.files?.pdf?.[0]?.mimetype || null,
+      updatedBy: req.body.updatedBy || 'ADMIN',
     });
     res.json({ success: true, data: record });
   } catch (err) {
@@ -177,6 +180,78 @@ export const getUploads = async (req, res) => {
     res.json({ success: true, data });
   } catch (err) {
     console.error('[itemMaster] getUploads error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const downloadImage = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const item = await ItemMasterModel.getItemMasterById(req.db, id);
+    
+    if (!item || !item.imageData) {
+      return res.status(404).json({ success: false, message: 'Image not found' });
+    }
+
+    res.set('Content-Type', item.imageMimeType || 'image/jpeg');
+    res.set('Content-Disposition', `inline; filename="item_${id}_image"`);
+    res.send(item.imageData);
+  } catch (err) {
+    console.error('[itemMaster] downloadImage error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const downloadPdf = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const item = await ItemMasterModel.getItemMasterById(req.db, id);
+    
+    if (!item || !item.pdfData) {
+      return res.status(404).json({ success: false, message: 'PDF not found' });
+    }
+
+    res.set('Content-Type', item.pdfMimeType || 'application/pdf');
+    res.set('Content-Disposition', `inline; filename="item_${id}_document.pdf"`);
+    res.send(item.pdfData);
+  } catch (err) {
+    console.error('[itemMaster] downloadPdf error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const downloadUploadImage = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const item = await ItemMasterModel.getUploadById(req.db, id);
+    
+    if (!item || !item.imageData) {
+      return res.status(404).json({ success: false, message: 'Image not found' });
+    }
+
+    res.set('Content-Type', item.imageMimeType || 'image/jpeg');
+    res.set('Content-Disposition', `inline; filename="upload_${id}_image"`);
+    res.send(item.imageData);
+  } catch (err) {
+    console.error('[itemMaster] downloadUploadImage error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const downloadUploadPdf = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const item = await ItemMasterModel.getUploadById(req.db, id);
+    
+    if (!item || !item.pdfData) {
+      return res.status(404).json({ success: false, message: 'PDF not found' });
+    }
+
+    res.set('Content-Type', item.pdfMimeType || 'application/pdf');
+    res.set('Content-Disposition', `inline; filename="upload_${id}_document.pdf"`);
+    res.send(item.pdfData);
+  } catch (err) {
+    console.error('[itemMaster] downloadUploadPdf error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

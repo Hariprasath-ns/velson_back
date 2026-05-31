@@ -10,7 +10,13 @@ export const getItemMasters = async (db, { page = 1, limit = 10, search = '' }) 
       }
     : {};
   const [items, total] = await Promise.all([
-    db.itemMaster.findMany({ where, skip, take: Number(limit), orderBy: { id: 'desc' } }),
+    db.itemMaster.findMany({ 
+      where, 
+      skip, 
+      take: Number(limit), 
+      orderBy: { id: 'desc' },
+      omit: { imageData: true, pdfData: true }
+    }),
     db.itemMaster.count({ where }),
   ]);
 
@@ -40,6 +46,8 @@ export const getItemMasters = async (db, { page = 1, limit = 10, search = '' }) 
     ...i,
     uom:               i.unitId          ? (uomMap[i.unitId]      ?? '') : '',
     materialGradeName: i.materialGradeId ? (gradeMap[i.materialGradeId] ?? '') : '',
+    hasImage:          !!i.imageMimeType,
+    hasPdf:            !!i.pdfMimeType,
   }));
   return { data, total };
 };
@@ -59,5 +67,18 @@ export const deleteItemMaster = (db, id) =>
 export const createUpload = (db, data) =>
   db.itemMasterUpload.create({ data });
 
-export const getUploadsByItemId = (db, itemId) =>
-  db.itemMasterUpload.findMany({ where: { itemId }, orderBy: { id: 'asc' } });
+export const getUploadsByItemId = async (db, itemId) => {
+  const uploads = await db.itemMasterUpload.findMany({ 
+    where: { itemId }, 
+    orderBy: { id: 'asc' },
+    omit: { imageData: true, pdfData: true }
+  });
+  return uploads.map(u => ({
+    ...u,
+    hasImage: !!u.imageMimeType,
+    hasPdf: !!u.pdfMimeType
+  }));
+};
+
+export const getUploadById = (db, id) =>
+  db.itemMasterUpload.findUnique({ where: { id } });

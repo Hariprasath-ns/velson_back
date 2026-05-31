@@ -9,19 +9,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 
 const scripts = [
+  'seedTaxMaster.js',
+  'seedSupplierMaster.js',      // 4. Seed Supplier_Type entries + supplier records
+  'seedCustomerMaster.js',      // 5. Seed Customer_Type entries + customer records
+  // 'seedPurchaseRequest.js',     // 7. Seed PurchaseRequest + details (main + mock)
+  // 'seedPurchaseMaster.js',      // 8. Seed PurchaseMaster (PO) + details (main + mock)
+  'seedAuthUsers.js',             // 0. Seed User + Role + Permission entries (for auth + testing)
   'seedSupplierType.js',      // 0. Seed Supplier_Type entries (for categorizing suppliers)
   'seedQuotation.js',        // 0. Seed QuoteMaster + details (main + mock)
   'seedItemGroupMaster.js',     // 0. Seed ItemGroupMaster (for grouping items in UI)
   'seedPrefix.js',             // 0. Seed ReferencePrefix entries (for generating codes like PR-0001)
-  'seedAuthUser.js',             // 0. Seed User + Role + Permission entries (for auth + testing)
   'seedreferencetypename.js',   // 1. Ensure all ReferenceType rows exist
   'seedReferenceMaster.js',     // 2. Seed all ReferenceMaster rows (Department, Team, UOM, etc.)
   'seedPartNumberBase.js',      // 3. Seed CategoryMaster, SubCategoryMaster, PartNumberBase
-  'seedSupplierMaster.js',      // 4. Seed Supplier_Type entries + supplier records
-  'seedCustomerMaster.js',      // 5. Seed Customer_Type entries + customer records
-  'seedItemMaster.js',          // 6. Seed ItemMaster — main production parts + mock items
-  'seedPurchaseRequest.js',     // 7. Seed PurchaseRequest + details (main + mock)
-  'seedPurchaseMaster.js',      // 8. Seed PurchaseMaster (PO) + details (main + mock)
 ];
 
 for (const script of scripts) {

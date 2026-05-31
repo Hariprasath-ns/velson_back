@@ -22,7 +22,7 @@ const prisma = new PrismaClient({
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 async function getSupplierId(sCode) {
-  const row = await prisma.supplierMaster.findUnique({ where: { sCode }, select: { id: true, contactPerson: true, address: true, gstNo: true, supplierRefNo: true } });
+  const row = await prisma.supplierMaster.findUnique({ where: { sCode }, select: { id: true, contactPerson: true, address: true, gstNo: true, sCode: true } });
   return row ?? null;
 }
 
@@ -353,11 +353,10 @@ async function main() {
           poDate:          po.poDate,
           etaDate:         po.etaDate          ?? null,
           poType:          po.poType           || 'Purchase Order',
-          supplierId:      supplierRow.id,
           contactPerson:   supplierRow.contactPerson ?? null,
           supplierAddress: supplierRow.address       ?? null,
           gstNo:           supplierRow.gstNo         ?? null,
-          supplierRefNo:   po.supplierRefNo    ?? null,
+          supplierRefNo:   po.supplierCode,
           discountType:    'Dis_Per',
           freight:         0,
           destination:     po.destination      || null,

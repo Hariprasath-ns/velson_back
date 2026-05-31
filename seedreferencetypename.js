@@ -62,7 +62,6 @@ const REF_TYPE_NAMES = [
   "QC_Inspection_Type",
   "QC_STATUS",
   "QC_Type",
-  "Quotation Type",
   "Quotation_confirmed_Status",
   "Spare_Issue_Type",
   "State",

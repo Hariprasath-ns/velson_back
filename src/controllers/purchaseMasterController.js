@@ -81,18 +81,43 @@ export const create = async (req, res) => {
       return res.status(400).json({ success: false, message: 'poNo is required' });
     }
 
+    let finalSupplierRefNo = supplierRefNo || null;
+    let finalContactPerson = contactPerson || null;
+    let finalContactNumber = contactNumber || null;
+    let finalSupplierAddress = supplierAddress || null;
+    let finalGstNo = gstNo || null;
+
+    if (!finalSupplierRefNo && supplierId) {
+      const sup = await req.db.supplierMaster.findUnique({ where: { id: parseInt(supplierId, 10) }});
+      if (sup) {
+        finalSupplierRefNo = sup.sCode;
+        finalContactPerson = finalContactPerson || sup.contactPerson || null;
+        finalContactNumber = finalContactNumber || sup.mobile || sup.phone || null;
+        finalSupplierAddress = finalSupplierAddress || sup.address || null;
+        finalGstNo = finalGstNo || sup.gstNo || null;
+      }
+    } else if (finalSupplierRefNo) {
+      const sup = await req.db.supplierMaster.findUnique({ where: { sCode: finalSupplierRefNo }});
+      if (sup) {
+        finalContactPerson = finalContactPerson || sup.contactPerson || null;
+        finalContactNumber = finalContactNumber || sup.mobile || sup.phone || null;
+        finalSupplierAddress = finalSupplierAddress || sup.address || null;
+        finalGstNo = finalGstNo || sup.gstNo || null;
+      }
+    }
+
     const headerData = {
       poNo:           poNo.trim(),
       financialYear:  financialYear  || '',
       poDate:         poDate ? new Date(poDate) : new Date(),
       etaDate:        etaDate ? new Date(etaDate) : null,
       poType:         poType         || 'Purchase Order',
-      supplierId:     supplierId ? parseInt(supplierId, 10) : null,
-      contactPerson:  contactPerson  || null,
-      contactNumber:  contactNumber  || null,
-      supplierAddress: supplierAddress || null,
-      gstNo:          gstNo          || null,
-      supplierRefNo:  supplierRefNo  || null,
+
+      contactPerson:  finalContactPerson,
+      contactNumber:  finalContactNumber,
+      supplierAddress: finalSupplierAddress,
+      gstNo:          finalGstNo,
+      supplierRefNo:  finalSupplierRefNo,
       discountType:   discountType   || 'Dis_Per',
       freight:        toFloat(freight),
       destination:    destination    || null,
@@ -148,16 +173,41 @@ export const update = async (req, res) => {
       status, updatedBy, items,
     } = req.body;
 
+    let finalSupplierRefNo = supplierRefNo || null;
+    let finalContactPerson = contactPerson || null;
+    let finalContactNumber = contactNumber || null;
+    let finalSupplierAddress = supplierAddress || null;
+    let finalGstNo = gstNo || null;
+
+    if (!finalSupplierRefNo && supplierId) {
+      const sup = await req.db.supplierMaster.findUnique({ where: { id: parseInt(supplierId, 10) }});
+      if (sup) {
+        finalSupplierRefNo = sup.sCode;
+        finalContactPerson = finalContactPerson || sup.contactPerson || null;
+        finalContactNumber = finalContactNumber || sup.mobile || sup.phone || null;
+        finalSupplierAddress = finalSupplierAddress || sup.address || null;
+        finalGstNo = finalGstNo || sup.gstNo || null;
+      }
+    } else if (finalSupplierRefNo) {
+      const sup = await req.db.supplierMaster.findUnique({ where: { sCode: finalSupplierRefNo }});
+      if (sup) {
+        finalContactPerson = finalContactPerson || sup.contactPerson || null;
+        finalContactNumber = finalContactNumber || sup.mobile || sup.phone || null;
+        finalSupplierAddress = finalSupplierAddress || sup.address || null;
+        finalGstNo = finalGstNo || sup.gstNo || null;
+      }
+    }
+
     const headerData = {
       poDate:         poDate ? new Date(poDate) : new Date(),
       etaDate:        etaDate ? new Date(etaDate) : null,
       poType:         poType         || 'Purchase Order',
-      supplier:       supplierId ? { connect: { id: parseInt(supplierId, 10) } } : { disconnect: true },
-      contactPerson:  contactPerson  || null,
-      contactNumber:  contactNumber  || null,
-      supplierAddress: supplierAddress || null,
-      gstNo:          gstNo          || null,
-      supplierRefNo:  supplierRefNo  || null,
+
+      contactPerson:  finalContactPerson,
+      contactNumber:  finalContactNumber,
+      supplierAddress: finalSupplierAddress,
+      gstNo:          finalGstNo,
+      supplierRefNo:  finalSupplierRefNo,
       discountType:   discountType   || 'Dis_Per',
       freight:        toFloat(freight),
       destination:    destination    || null,

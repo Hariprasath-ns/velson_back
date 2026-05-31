@@ -1,4 +1,11 @@
 import * as QuotationModel from '../models/quotationModel.js'
+import multer from 'multer'
+
+const storage = multer.memoryStorage()
+export const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+})
 
 const toFloat = (v) => (v !== '' && v != null ? parseFloat(v) || 0 : 0)
 const toInt   = (v) => (v !== '' && v != null ? parseInt(v, 10) || 0 : 0)
@@ -161,6 +168,50 @@ export const remove = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Quotation not found' })
     }
     console.error('[quotation] delete error:', err)
+    res.status(500).json({ success: false, message: err.message })
+  }
+}
+
+export const uploadDocument = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No document uploaded' })
+    }
+
+    const updateData = {
+      documentData: req.file.buffer,
+      documentMimeType: req.file.mimetype,
+      documentPath: req.file.originalname,
+      updatedBy: req.body.updatedBy || 'ADMIN',
+    }
+
+    const record = await req.db.quotationMaster.update({
+      where: { id },
+      data: updateData,
+    })
+    
+    res.json({ success: true, data: record })
+  } catch (err) {
+    console.error('[quotation] uploadDocument error:', err)
+    res.status(500).json({ success: false, message: err.message })
+  }
+}
+
+export const downloadDocument = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    const quotation = await req.db.quotationMaster.findUnique({ where: { id } })
+    
+    if (!quotation || !quotation.documentData) {
+      return res.status(404).json({ success: false, message: 'Document not found' })
+    }
+
+    res.set('Content-Type', quotation.documentMimeType || 'application/pdf')
+    res.set('Content-Disposition', `inline; filename="${quotation.documentPath || 'document'}"`)
+    res.send(quotation.documentData)
+  } catch (err) {
+    console.error('[quotation] downloadDocument error:', err)
     res.status(500).json({ success: false, message: err.message })
   }
 }

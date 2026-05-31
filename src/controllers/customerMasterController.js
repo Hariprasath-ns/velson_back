@@ -1,4 +1,17 @@
 import * as CustomerModel from '../models/customerMasterModel.js';
+import multer from 'multer';
+
+const storage = multer.memoryStorage();
+
+export const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.fieldname === 'image') cb(null, /^image\/(jpeg|png|gif|webp)$/.test(file.mimetype));
+    else if (file.fieldname === 'pdf') cb(null, file.mimetype === 'application/pdf');
+    else cb(null, false);
+  },
+});
 
 export const getAll = async (req, res) => {
   try {
@@ -147,6 +160,69 @@ export const remove = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Customer not found' });
     }
     console.error('[customerMaster] delete error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const uploadFiles = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const updateData = { updatedBy: req.body.updatedBy || 'ADMIN' };
+    
+    if (req.files?.image?.[0]) {
+      updateData.imageData = req.files.image[0].buffer;
+      updateData.imageMimeType = req.files.image[0].mimetype;
+    }
+    
+    if (req.files?.pdf?.[0]) {
+      updateData.pdfData = req.files.pdf[0].buffer;
+      updateData.pdfMimeType = req.files.pdf[0].mimetype;
+    }
+
+    if (!req.files?.image?.[0] && !req.files?.pdf?.[0]) {
+      return res.status(400).json({ success: false, message: 'No files uploaded' });
+    }
+
+    const record = await CustomerModel.updateCustomer(req.db, id, updateData);
+    res.json({ success: true, data: record });
+  } catch (err) {
+    console.error('[customerMaster] uploadFiles error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const downloadImage = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const item = await CustomerModel.getCustomerById(req.db, id);
+    
+    if (!item || !item.imageData) {
+      return res.status(404).json({ success: false, message: 'Image not found' });
+    }
+
+    res.set('Content-Type', item.imageMimeType || 'image/jpeg');
+    res.set('Content-Disposition', `inline; filename="customer_${id}_image"`);
+    res.send(item.imageData);
+  } catch (err) {
+    console.error('[customerMaster] downloadImage error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const downloadPdf = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const item = await CustomerModel.getCustomerById(req.db, id);
+    
+    if (!item || !item.pdfData) {
+      return res.status(404).json({ success: false, message: 'PDF not found' });
+    }
+
+    res.set('Content-Type', item.pdfMimeType || 'application/pdf');
+    res.set('Content-Disposition', `inline; filename="customer_${id}_document.pdf"`);
+    res.send(item.pdfData);
+  } catch (err) {
+    console.error('[customerMaster] downloadPdf error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

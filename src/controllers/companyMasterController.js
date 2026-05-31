@@ -1,20 +1,9 @@
 import { fileURLToPath } from 'url';
 import path from 'path';
-import fs from 'fs';
 import multer from 'multer';
 import * as CompanyModel from '../models/companyMasterModel.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'company-master');
-fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `company_logo_${Date.now()}${ext}`);
-  },
-});
+const storage = multer.memoryStorage();
 
 export const upload = multer({
   storage,
@@ -118,7 +107,11 @@ export const create = async (req, res) => {
     data.companyCode = resolvedCode;
     data.createdBy = req.body.createdBy || 'Admin';
     data.updatedBy = req.body.createdBy || 'Admin';
-    if (req.file) data.logoPath = `/uploads/company-master/${req.file.filename}`;
+    
+    if (req.file) {
+      data.logoData = req.file.buffer;
+      data.logoMimeType = req.file.mimetype;
+    }
 
     const record = await CompanyModel.createCompany(req.db, data);
     res.status(201).json({ success: true, data: record });
@@ -140,7 +133,10 @@ export const update = async (req, res) => {
 
     const data = buildData(req.body);
     data.updatedBy = req.body.updatedBy || 'Admin';
-    if (req.file) data.logoPath = `/uploads/company-master/${req.file.filename}`;
+    if (req.file) {
+      data.logoData = req.file.buffer;
+      data.logoMimeType = req.file.mimetype;
+    }
 
     const record = await CompanyModel.updateCompany(req.db, id, data);
     res.json({ success: true, data: record });
@@ -166,6 +162,24 @@ export const remove = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Company not found' });
     }
     console.error('[companyMaster] delete error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const downloadLogo = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const company = await CompanyModel.getCompanyById(req.db, id);
+    
+    if (!company || !company.logoData) {
+      return res.status(404).json({ success: false, message: 'Logo not found' });
+    }
+
+    res.set('Content-Type', company.logoMimeType || 'image/png');
+    res.set('Content-Disposition', `inline; filename="company_${id}_logo"`);
+    res.send(company.logoData);
+  } catch (err) {
+    console.error('[companyMaster] downloadLogo error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };

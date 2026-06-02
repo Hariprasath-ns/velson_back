@@ -77,14 +77,15 @@ echo "[startup] Migrations complete."
 
 if [ "${SEED_DB}" = "true" ]; then
   echo "[startup] Seeding database..."
-  node seedreferencetypename.js   || echo "[startup] Warning: seedreferencetypename.js failed (skipping)"
-  node seedReferenceMaster.js     || echo "[startup] Warning: seedReferenceMaster.js failed (skipping)"
-  node seedPartNumberBase.js      || echo "[startup] Warning: seedPartNumberBase.js failed (skipping)"
-  node seedSupplierMaster.js      || echo "[startup] Warning: seedSupplierMaster.js failed (skipping)"
-  node seedCustomerMaster.js      || echo "[startup] Warning: seedCustomerMaster.js failed (skipping)"
-  node seedPurchaseRequest.js     || echo "[startup] Warning: seedPurchaseRequest.js failed (skipping)"
-  node seedPurchaseMaster.js      || echo "[startup] Warning: seedPurchaseMaster.js failed (skipping)"
-  node prisma/seedAuthUsers.js    || echo "[startup] Warning: seedAuthUsers.js failed (skipping)"
+  npm run seed || echo "[startup] Warning: seedreferencetypename.js failed (skipping)"
+  # node seedreferencetypename.js   || echo "[startup] Warning: seedreferencetypename.js failed (skipping)"
+  # node seedReferenceMaster.js     || echo "[startup] Warning: seedReferenceMaster.js failed (skipping)"
+  # node seedPartNumberBase.js      || echo "[startup] Warning: seedPartNumberBase.js failed (skipping)"
+  # node seedSupplierMaster.js      || echo "[startup] Warning: seedSupplierMaster.js failed (skipping)"
+  # node seedCustomerMaster.js      || echo "[startup] Warning: seedCustomerMaster.js failed (skipping)"
+  # node seedPurchaseRequest.js     || echo "[startup] Warning: seedPurchaseRequest.js failed (skipping)"
+  # node seedPurchaseMaster.js      || echo "[startup] Warning: seedPurchaseMaster.js failed (skipping)"
+  # node prisma/seedAuthUsers.js    || echo "[startup] Warning: seedAuthUsers.js failed (skipping)"
   echo "[startup] Seeding complete."
 fi
 

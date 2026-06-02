@@ -809,3 +809,49 @@ model MaterialRequestDetail {
 
   @@map("material_request_detail")
 }
+model QCCheckMethod {
+  id            Int      @id @default(autoincrement())
+  checkCode     String   @unique
+  checkName     String
+  description   String?
+  status        String   @default("A")
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("qc_check_method")
+}
+
+model PartUsageList {
+  id           Int      @id @default(autoincrement())
+  partNo       String
+  partName     String
+  group        String?
+  partSpareQty Int?
+  createdBy    String?
+  updatedBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("part_usage_list")
+}
+
+model SystemInfoMaster {
+  id           Int      @id @default(autoincrement())
+  dept         String
+  userName     String
+  gateWay      String?
+  ip           String?
+  ipAddress    String?
+  velsonNo     String?
+  macAddress   String?
+  deviceName   String?
+  manufacturer String?
+  createdBy    String?
+  updatedBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("system_info_master")
+}

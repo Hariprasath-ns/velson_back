@@ -34,6 +34,9 @@ import contractorMasterRoute from "./routes/contractorMasterRoute.js";
 import machineMasterRoute from "./routes/machineMasterRoute.js";
 import vehicleServiceMasterRoute from "./routes/vehicleServiceMasterRoute.js";
 import materialRequestRoute from "./routes/materialRequestRoute.js";
+import partUsageListRoute from "./routes/partUsageListRoute.js";
+import qcCheckMethodRoute from "./routes/qcCheckMethodRoute.js";
+import systemInfoMasterRoute from "./routes/systemInfoMasterRoute.js";
 
 dotenv.config();
 const app = express();
@@ -74,6 +77,9 @@ app.use("/api", contractorMasterRoute);
 app.use("/api", machineMasterRoute);
 app.use("/api", vehicleServiceMasterRoute);
 app.use("/api", materialRequestRoute);
+app.use("/api", partUsageListRoute);
+app.use("/api", qcCheckMethodRoute);
+app.use("/api", systemInfoMasterRoute);
 
 const PORT = process.env.PORT || 5000;
 

@@ -11,6 +11,7 @@ RUN npx prisma generate
 
 COPY src ./src
 COPY seed*.js ./
+
 COPY entrypoint.sh ./
 RUN chmod +x entrypoint.sh
 

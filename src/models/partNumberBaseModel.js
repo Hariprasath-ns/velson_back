@@ -48,7 +48,7 @@ export const generatePartNumberTx = async (db, prefixCode) => {
     return { digitCount: record.digitCount, runningNumber: record.currentRunningNumber };
   }, { isolationLevel: 'Serializable' });
 
-  const partNumber = prefixCode + String(runningNumber).padStart(digitCount, '0');
+  const partNumber = prefixCode + '-' + String(runningNumber).padStart(digitCount, '0');
   return { partNumber, currentRunningNumber: runningNumber + 1 };
 };
 
@@ -64,7 +64,7 @@ export const previewNextPartNumber = async (db, prefixCode) => {
   }
 
   const partNumber =
-    prefixCode + String(record.currentRunningNumber).padStart(record.digitCount, '0');
+    prefixCode + '-' + String(record.currentRunningNumber).padStart(record.digitCount, '0');
 
   return { partNumber, remaining: record.endingNumber - record.currentRunningNumber + 1 };
 };

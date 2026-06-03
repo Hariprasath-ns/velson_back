@@ -2,18 +2,18 @@ export const getItemMasters = async (db, { page = 1, limit = 10, search = '' }) 
   const skip = (Number(page) - 1) * Number(limit);
   const where = search
     ? {
-        OR: [
-          { partName: { contains: search, mode: 'insensitive' } },
-          { partNo: { contains: search, mode: 'insensitive' } },
-          { outsourcePartNo: { contains: search, mode: 'insensitive' } },
-        ],
-      }
+      OR: [
+        { partName: { contains: search, mode: 'insensitive' } },
+        { partNo: { contains: search, mode: 'insensitive' } },
+        { outsourcePartNo: { contains: search, mode: 'insensitive' } },
+      ],
+    }
     : {};
   const [items, total] = await Promise.all([
-    db.itemMaster.findMany({ 
-      where, 
-      skip, 
-      take: Number(limit), 
+    db.itemMaster.findMany({
+      where,
+      skip,
+      take: Number(limit),
       orderBy: { id: 'desc' },
       omit: { imageData: true, pdfData: true }
     }),
@@ -44,10 +44,10 @@ export const getItemMasters = async (db, { page = 1, limit = 10, search = '' }) 
 
   const data = items.map(i => ({
     ...i,
-    uom:               i.unitId          ? (uomMap[i.unitId]      ?? '') : '',
+    uom: i.unitId ? (uomMap[i.unitId] ?? '') : '',
     materialGradeName: i.materialGradeId ? (gradeMap[i.materialGradeId] ?? '') : '',
-    hasImage:          !!i.imageMimeType,
-    hasPdf:            !!i.pdfMimeType,
+    hasImage: !!i.imageMimeType,
+    hasPdf: !!i.pdfMimeType,
   }));
   return { data, total };
 };
@@ -68,8 +68,8 @@ export const createUpload = (db, data) =>
   db.itemMasterUpload.create({ data });
 
 export const getUploadsByItemId = async (db, itemId) => {
-  const uploads = await db.itemMasterUpload.findMany({ 
-    where: { itemId }, 
+  const uploads = await db.itemMasterUpload.findMany({
+    where: { itemId },
     orderBy: { id: 'asc' },
     omit: { imageData: true, pdfData: true }
   });

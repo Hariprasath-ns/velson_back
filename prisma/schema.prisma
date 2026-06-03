@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -45,19 +40,18 @@ model ReferenceType {
 }
 
 model ReferenceMaster {
-  id              Int            @id @default(autoincrement())
-  referenceType   String
-  referenceTypeId Int?
-  code            String
-  description     String
-  updatedBy       String
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  refType         ReferenceType? @relation(fields: [referenceTypeId], references: [id], onDelete: SetNull)
-
-  purchaseRequestsByDept         PurchaseRequest[] @relation("PRDepartmentRef")
-  purchaseRequestsByTeam         PurchaseRequest[] @relation("PRTeamRef")
+  id                              Int               @id @default(autoincrement())
+  referenceType                   String
+  code                            String
+  description                     String
+  updatedBy                       String
+  createdAt                       DateTime          @default(now())
+  updatedAt                       DateTime          @updatedAt
+  referenceTypeId                 Int?
+  purchaseRequestsByDept          PurchaseRequest[] @relation("PRDepartmentRef")
   purchaseRequestsByRequestingFor PurchaseRequest[] @relation("PRRequestingForRef")
+  purchaseRequestsByTeam          PurchaseRequest[] @relation("PRTeamRef")
+  refType                         ReferenceType?    @relation(fields: [referenceTypeId], references: [id])
 
   @@map("reference_master")
 }
@@ -118,8 +112,8 @@ model CategoryMaster {
   categoryName  String              @unique
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
-  subCategories SubCategoryMaster[]
   partNumbers   PartNumberBase[]
+  subCategories SubCategoryMaster[]
 
   @@map("category_master")
 }
@@ -132,8 +126,8 @@ model SubCategoryMaster {
   description     String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  category        CategoryMaster   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   partNumbers     PartNumberBase[]
+  category        CategoryMaster   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([categoryId, subCategoryName])
   @@map("sub_category_master")
@@ -159,149 +153,149 @@ model PartNumberBase {
 }
 
 model ItemMaster {
-  id              Int                @id @default(autoincrement())
-  groupId         Int?
-  partNo          String             @unique
-  outsourcePartNo String?
-  partName        String
-  modelId         Int?
-  brand           String?
-  description     String?
-  size            String?
-  weight          Float?
-  unitId          Int?
-  hsnCode         String?
-  purchaseRate    Float?
-  marginPercent   Float?
-  rate            Float?
-  currencyId      Int?
-  taxId           Int?
-  subGroupId      Int?
-  storeId         Int?
-  rackNo          String?
-  location        String?
-  itemTypeId      Int?
-  qcTypeId        Int?
-  materialGradeId Int?
-  materialTypeId  Int?
-  rawMaterialId   Int?
-  rmLength        String?
-  rawMaterialWt   Float?
-  fgMaterialWt    Float?
-  reorderLevel    Float?
-  minStock        Float?
-  imagePath       String?
-  imageData       Bytes?
-  imageMimeType   String?
-  pdfPath         String?
-  pdfData         Bytes?
-  pdfMimeType     String?
-  createdBy       String?
-  updatedBy       String?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  id                     Int                     @id @default(autoincrement())
+  groupId                Int?
+  partNo                 String                  @unique
+  outsourcePartNo        String?
+  partName               String
+  modelId                Int?
+  brand                  String?
+  description            String?
+  size                   String?
+  weight                 Float?
+  unitId                 Int?
+  hsnCode                String?
+  purchaseRate           Float?
+  marginPercent          Float?
+  rate                   Float?
+  currencyId             Int?
+  taxId                  Int?
+  subGroupId             Int?
+  storeId                Int?
+  rackNo                 String?
+  location               String?
+  itemTypeId             Int?
+  qcTypeId               Int?
+  materialGradeId        Int?
+  materialTypeId         Int?
+  rawMaterialId          Int?
+  rmLength               String?
+  rawMaterialWt          Float?
+  fgMaterialWt           Float?
+  reorderLevel           Float?
+  minStock               Float?
+  createdBy              String?
+  updatedBy              String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  imagePath              String?
+  pdfPath                String?
+  imageData              Bytes?
+  imageMimeType          String?
+  pdfData                Bytes?
+  pdfMimeType            String?
   uploads                ItemMasterUpload[]
-  quotationDetails       QuotationDetail[]
-  purchaseRequestDetails PurchaseRequestDetail[]
   purchaseDetails        PurchaseDetail[]
+  purchaseRequestDetails PurchaseRequestDetail[]
+  quotationDetails       QuotationDetail[]
 
   @@map("item_master")
 }
 
 model SupplierMaster {
-  id              Int              @id @default(autoincrement())
-  supplierType    String
-  sCode           String           @unique
-  supplierName    String
-  address         String?
-  address2        String?
-  address3        String?
-  address4        String?
-  city            String?
-  country         String?          @default("India")
-  state           String?
-  stateCode       String?
-  pinCode         String?
-  contactPerson   String?
-  mobile          String?
-  phone           String?
-  email           String?
-  website         String?
-  gstNo           String?
-  panNo           String?
-  bankName        String?
-  branchName      String?
-  accountName     String?
-  accountNumber   String?
-  ifscCode        String?
-  micrCode        String?
-  createdBy       String?
-  updatedBy       String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  purchaseOrders  PurchaseMaster[]
+  id             Int              @id @default(autoincrement())
+  supplierType   String
+  sCode          String           @unique
+  supplierName   String
+  address        String?
+  address2       String?
+  address3       String?
+  address4       String?
+  city           String?
+  country        String?          @default("India")
+  state          String?
+  stateCode      String?
+  pinCode        String?
+  contactPerson  String?
+  mobile         String?
+  phone          String?
+  email          String?
+  website        String?
+  gstNo          String?
+  panNo          String?
+  bankName       String?
+  branchName     String?
+  accountName    String?
+  accountNumber  String?
+  ifscCode       String?
+  micrCode       String?
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  purchaseOrders PurchaseMaster[]
 
   @@map("supplier_master")
 }
 
 model ItemMasterUpload {
-  id        Int        @id @default(autoincrement())
-  itemId    Int
-  item      ItemMaster @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  imagePath String?
-  imageData Bytes?
+  id            Int        @id @default(autoincrement())
+  itemId        Int
+  imagePath     String?
+  pdfPath       String?
+  updatedBy     String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  imageData     Bytes?
   imageMimeType String?
-  pdfPath   String?
-  pdfData   Bytes?
-  pdfMimeType String?
-  updatedBy String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  pdfData       Bytes?
+  pdfMimeType   String?
+  item          ItemMaster @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@map("item_master_upload")
 }
 
 model CustomerMaster {
-  id            Int      @id @default(autoincrement())
-  customerType  String
-  cCode         String   @unique
-  customerName  String
-  address       String?
-  address2      String?
-  address3      String?
-  address4      String?
-  city          String?
-  country       String?  @default("India")
-  state         String?
-  stateCode     String?
-  pinCode       String?
-  contactPerson String?
-  mobile        String?
-  phone         String?
-  email         String?
-  website       String?
-  aadharNo      String?
-  gstNo         String?
-  panNo         String?
-  bankName      String?
-  branchName    String?
-  accountName   String?
-  accountNumber String?
-  ifscCode      String?
-  micrCode      String?
-  remarks       String?
+  id             Int               @id @default(autoincrement())
+  customerType   String
+  cCode          String            @unique
+  customerName   String
+  address        String?
+  address2       String?
+  address3       String?
+  address4       String?
+  city           String?
+  country        String?           @default("India")
+  state          String?
+  stateCode      String?
+  pinCode        String?
+  contactPerson  String?
+  mobile         String?
+  phone          String?
+  email          String?
+  website        String?
+  aadharNo       String?
+  gstNo          String?
+  panNo          String?
+  bankName       String?
+  branchName     String?
+  accountName    String?
+  accountNumber  String?
+  ifscCode       String?
+  micrCode       String?
+  remarks        String?
   createdBy      String?
   updatedBy      String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  imagePath      String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
   imageData      Bytes?
   imageMimeType  String?
-  pdfPath        String?
+  imagePath      String?
   pdfData        Bytes?
   pdfMimeType    String?
-  vehicleMasters   VehicleMaster[]
-  quotations       QuotationMaster[]
+  pdfPath        String?
+  quotations     QuotationMaster[]
+  vehicleMasters VehicleMaster[]
 
   @@map("customer_master")
 }
@@ -324,7 +318,7 @@ model VehicleMaster {
   updatedBy      String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-  customer       CustomerMaster @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customer       CustomerMaster @relation(fields: [customerId], references: [id])
 
   @@map("vehicle_master")
 }
@@ -353,16 +347,16 @@ model QuotationMaster {
   taxAmount         Float             @default(0)
   totalAmount       Float             @default(0)
   paymentTerms      String?
-  documentPath      String?
-  documentData      Bytes?
-  documentMimeType  String?
   status            String            @default("Draft")
   createdBy         String?
   updatedBy         String?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
-  customer          CustomerMaster    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  documentPath      String?
+  documentData      Bytes?
+  documentMimeType  String?
   details           QuotationDetail[]
+  customer          CustomerMaster    @relation(fields: [customerId], references: [id])
 
   @@map("quotation_master")
 }
@@ -370,7 +364,6 @@ model QuotationMaster {
 model QuotationDetail {
   id          Int             @id @default(autoincrement())
   quotationId Int
-  slNo        Int
   itemId      Int?
   partNo      String?
   itemName    String?
@@ -382,37 +375,38 @@ model QuotationDetail {
   amount      Float           @default(0)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  slNo        Int
+  item        ItemMaster?     @relation(fields: [itemId], references: [id])
   quotation   QuotationMaster @relation(fields: [quotationId], references: [id], onDelete: Cascade)
-  item        ItemMaster?     @relation(fields: [itemId], references: [id], onDelete: SetNull)
 
   @@map("quotation_detail")
 }
 
 model PurchaseRequest {
-  id             Int                     @id @default(autoincrement())
-  prNo           String                  @unique
-  financialYear  String
-  prDate         DateTime                @default(now())
-  requiredDate   DateTime?
-  department     String?
-  departmentId   Int?
-  requestingUser String?
-  team           String?
-  teamId         Int?
-  requestingFor   String?
-  requestingForId Int?
-  remarks         String?
-  status          String                  @default("Draft")
-  poNo            String?
-  poDate          DateTime?
-  createdBy       String?
-  updatedBy       String?
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
-  details             PurchaseRequestDetail[]
-  departmentRef       ReferenceMaster?        @relation("PRDepartmentRef", fields: [departmentId], references: [id], onDelete: SetNull)
-  teamRef             ReferenceMaster?        @relation("PRTeamRef", fields: [teamId], references: [id], onDelete: SetNull)
-  requestingForRef    ReferenceMaster?        @relation("PRRequestingForRef", fields: [requestingForId], references: [id], onDelete: SetNull)
+  id               Int                     @id @default(autoincrement())
+  prNo             String                  @unique
+  financialYear    String
+  prDate           DateTime                @default(now())
+  requiredDate     DateTime?
+  department       String?
+  requestingUser   String?
+  team             String?
+  requestingFor    String?
+  remarks          String?
+  status           String                  @default("Draft")
+  poNo             String?
+  poDate           DateTime?
+  createdBy        String?
+  updatedBy        String?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  departmentId     Int?
+  teamId           Int?
+  requestingForId  Int?
+  departmentRef    ReferenceMaster?        @relation("PRDepartmentRef", fields: [departmentId], references: [id])
+  requestingForRef ReferenceMaster?        @relation("PRRequestingForRef", fields: [requestingForId], references: [id])
+  teamRef          ReferenceMaster?        @relation("PRTeamRef", fields: [teamId], references: [id])
+  details          PurchaseRequestDetail[]
 
   @@map("purchase_request")
 }
@@ -433,27 +427,26 @@ model PurchaseRequestDetail {
   purpose       String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+  item          ItemMaster?     @relation(fields: [itemId], references: [id])
   pr            PurchaseRequest @relation(fields: [prId], references: [id], onDelete: Cascade)
-  item          ItemMaster?     @relation(fields: [itemId], references: [id], onDelete: SetNull)
 
   @@map("purchase_request_detail")
 }
 
 model PurchaseMaster {
-  id              Int             @id @default(autoincrement())
-  poNo            String          @unique
+  id              Int              @id @default(autoincrement())
+  poNo            String           @unique
   financialYear   String
-  poDate          DateTime        @default(now())
+  poDate          DateTime         @default(now())
   etaDate         DateTime?
-  poType          String          @default("Purchase Order")
-
+  poType          String           @default("Purchase Order")
   contactPerson   String?
   contactNumber   String?
   supplierAddress String?
   gstNo           String?
   supplierRefNo   String?
-  discountType    String          @default("Dis_Per")
-  freight         Float           @default(0)
+  discountType    String           @default("Dis_Per")
+  freight         Float            @default(0)
   destination     String?
   paymentTerms    String?
   testReport      String?
@@ -464,23 +457,23 @@ model PurchaseMaster {
   warrantyTerms   String?
   discountTerms   String?
   remarks         String?
-  subTotal        Float           @default(0)
-  cgstPer         Float           @default(0)
-  cgstAmt         Float           @default(0)
-  sgstPer         Float           @default(0)
-  sgstAmt         Float           @default(0)
-  igstPer         Float           @default(0)
-  igstAmt         Float           @default(0)
-  othersPer       Float           @default(0)
-  othersAmt       Float           @default(0)
-  totalAmount     Float           @default(0)
-  status          String          @default("Draft")
+  subTotal        Float            @default(0)
+  cgstPer         Float            @default(0)
+  cgstAmt         Float            @default(0)
+  sgstPer         Float            @default(0)
+  sgstAmt         Float            @default(0)
+  igstPer         Float            @default(0)
+  igstAmt         Float            @default(0)
+  othersPer       Float            @default(0)
+  othersAmt       Float            @default(0)
+  totalAmount     Float            @default(0)
+  status          String           @default("Draft")
   createdBy       String?
   updatedBy       String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  supplier        SupplierMaster? @relation(fields: [supplierRefNo], references: [sCode], onDelete: SetNull)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   details         PurchaseDetail[]
+  supplier        SupplierMaster?  @relation(fields: [supplierRefNo], references: [sCode])
 
   @@map("purchase_master")
 }
@@ -507,8 +500,8 @@ model PurchaseDetail {
   netAmt         Float          @default(0)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+  item           ItemMaster?    @relation(fields: [itemId], references: [id])
   po             PurchaseMaster @relation(fields: [poId], references: [id], onDelete: Cascade)
-  item           ItemMaster?    @relation(fields: [itemId], references: [id], onDelete: SetNull)
 
   @@map("purchase_detail")
 }
@@ -567,59 +560,59 @@ model EmployeeMaster {
 }
 
 model CompanyMaster {
-  id               Int      @id @default(autoincrement())
-  companyCode      String   @unique
-  companyName      String
-  companyType      String?
-  doorNumber       String?
-  street           String?
-  place            String?
-  post             String?
-  city             String?
-  taluk            String?
-  district         String?
-  districtCode     String?
-  state            String?
-  stateCode        String?
-  country          String?  @default("India")
-  pinCode          String?
-  address          String?
-  gstin            String?
-  panNo            String?
-  companyPhone     String?
-  companyEmail     String?
-  companyWebsite   String?
-  marketingPhone   String?
-  marketingEmail   String?
-  marketingWebsite String?
-  purchasePhone    String?
-  purchaseEmail    String?
-  purchaseWebsite  String?
-  salesPhone       String?
-  salesEmail       String?
-  salesWebsite     String?
-  servicePhone     String?
-  serviceEmail     String?
-  serviceWebsite   String?
-  bankName         String?
-  bankBranch       String?
-  bankAccountType  String?
-  bankAccountName  String?
+  id                Int      @id @default(autoincrement())
+  companyCode       String   @unique
+  companyName       String
+  companyType       String?
+  doorNumber        String?
+  street            String?
+  place             String?
+  post              String?
+  city              String?
+  taluk             String?
+  district          String?
+  districtCode      String?
+  state             String?
+  stateCode         String?
+  country           String?  @default("India")
+  pinCode           String?
+  address           String?
+  gstin             String?
+  panNo             String?
+  companyPhone      String?
+  companyEmail      String?
+  companyWebsite    String?
+  marketingPhone    String?
+  marketingEmail    String?
+  marketingWebsite  String?
+  purchasePhone     String?
+  purchaseEmail     String?
+  purchaseWebsite   String?
+  salesPhone        String?
+  salesEmail        String?
+  salesWebsite      String?
+  servicePhone      String?
+  serviceEmail      String?
+  serviceWebsite    String?
+  bankName          String?
+  bankBranch        String?
+  bankAccountType   String?
+  bankAccountName   String?
   bankAccountNumber String?
-  bankIfscCode     String?
-  bankMicrCode     String?
-  bankDistrict     String?
-  bankState        String?
-  bankPinCode      String?
-  bankCountry      String?
-  bankAddress      String?
-  logoPath         String?
-  logoData         Bytes?
-  logoMimeType     String?
-  createdBy        String?
-  updatedBy        String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  bankIfscCode      String?
+  bankMicrCode      String?
+  bankDistrict      String?
+  bankState         String?
+  bankPinCode       String?
+  bankCountry       String?
+  bankAddress       String?
+  logoPath          String?
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  logoData          Bytes?
+  logoMimeType      String?
 
   @@map("company_master")
 }
@@ -645,17 +638,17 @@ model GateDetail {
 }
 
 model ContractorMaster {
-  id             Int      @id @default(autoincrement())
-  contractCode   String   @unique
-  contractName   String
-  address        String?
-  phone          String?
-  email          String?
-  status         String   @default("Active")
-  createdBy      String?
-  updatedBy      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  contractCode String   @unique
+  contractName String
+  address      String?
+  phone        String?
+  email        String?
+  status       String   @default("Active")
+  createdBy    String?
+  updatedBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@map("contractor_master")
 }
@@ -809,16 +802,17 @@ model MaterialRequestDetail {
 
   @@map("material_request_detail")
 }
+
 model QCCheckMethod {
-  id            Int      @id @default(autoincrement())
-  checkCode     String   @unique
-  checkName     String
-  description   String?
-  status        String   @default("A")
-  createdBy     String?
-  updatedBy     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  checkCode   String   @unique
+  checkName   String
+  description String?
+  status      String   @default("A")
+  createdBy   String?
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
   @@map("qc_check_method")
 }
@@ -832,26 +826,53 @@ model PartUsageList {
   createdBy    String?
   updatedBy    String?
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime @default(now()) @updatedAt
 
   @@map("part_usage_list")
 }
 
-model SystemInfoMaster {
-  id           Int      @id @default(autoincrement())
-  dept         String
-  userName     String
-  gateWay      String?
-  ip           String?
-  ipAddress    String?
-  velsonNo     String?
-  macAddress   String?
-  deviceName   String?
-  manufacturer String?
-  createdBy    String?
-  updatedBy    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+model ServiceBooking {
+  id                    Int      @id @default(autoincrement())
+  bookingId             Int      @unique
+  bookingDate           String
+  customerName          String
+  customerCode          String?
+  customerVehicleCount  Int?     @default(1)
+  vehicleSerialNo       String?
+  serialNo              String?
+  vehicleNo             String?
+  serviceJobNo          String   @unique
+  vehicleModelNo        String
+  modelSubType          String
+  vehicleName           String
+  status                String   @default("Pending")
+  remarks               String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
-  @@map("system_info_master")
+  @@map("service_booking")
 }
+
+model ServiceDetail {
+  id                Int      @id @default(autoincrement())
+  serviceJobNo      String   @unique
+  customerCode      String?
+  vehicleCount      Int?     @default(1)
+  customerName      String?
+  bookingId         Int?
+  bookingDate       String?
+  serialNo          String?
+  vehicleNo         String?
+  vehicleModelNo    String
+  modelSubType      String
+  vehicleName       String
+  status            String   @default("Open")
+  remarks           String?
+  servicePartNo     String?
+  checkedAssemblies Int[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("service_detail")
+}
+

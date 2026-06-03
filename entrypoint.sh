@@ -1,93 +1,124 @@
 #!/bin/sh
 set -e
 
+echo "[startup] Starting application..."
+
+############################################
+# RUN PRISMA MIGRATIONS
+############################################
+
 echo "[startup] Running database migrations..."
 
-run_migrate() {
+run_migration() {
   set +e
-  OUT=$(npx prisma migrate deploy 2>&1)
-  EXIT=$?
+  OUTPUT=$(npx prisma migrate deploy 2>&1)
+  EXIT_CODE=$?
   set -e
-  echo "$OUT"
-  echo "$EXIT"
+
+  echo "$OUTPUT"
+
+  return $EXIT_CODE
 }
 
-# --- First attempt ---
-set +e
-MIGRATE_OUT=$(npx prisma migrate deploy 2>&1)
-MIGRATE_EXIT=$?
-set -e
+############################################
+# FIRST ATTEMPT
+############################################
 
-echo "$MIGRATE_OUT"
+if run_migration; then
+  echo "[startup] Migration successful."
+else
 
-if [ $MIGRATE_EXIT -eq 0 ]; then
-  : # success, continue
-elif echo "$MIGRATE_OUT" | grep -q "P3009"; then
-  # Stuck failed migration — mark rolled-back and retry
-  FAILED=$(echo "$MIGRATE_OUT" | grep "The \`" | sed "s/.*The \`\([^\`]*\)\` migration.*/\1/")
-  if [ -z "$FAILED" ]; then
-    echo "[startup] P3009 detected but could not extract migration name — exiting"
-    exit 1
-  fi
-  echo "[startup] Auto-resolving stuck migration (P3009): $FAILED"
-  npx prisma migrate resolve --rolled-back "$FAILED"
+  ############################################
+  # HANDLE FAILED MIGRATION (P3009)
+  ############################################
 
-  # --- Second attempt ---
-  set +e
-  MIGRATE_OUT2=$(npx prisma migrate deploy 2>&1)
-  MIGRATE_EXIT2=$?
-  set -e
-  echo "$MIGRATE_OUT2"
+  if echo "$OUTPUT" | grep -q "P3009"; then
 
-  if [ $MIGRATE_EXIT2 -eq 0 ]; then
-    : # success
-  elif echo "$MIGRATE_OUT2" | grep -q "42P07"; then
-    # Table already exists in DB — migration was partially applied; mark as applied
-    FAILED2=$(echo "$MIGRATE_OUT2" | grep "Migration name:" | sed "s/.*Migration name: *//" | tr -d '[:space:]')
-    if [ -z "$FAILED2" ]; then
-      echo "[startup] P3018 (42P07) detected but could not extract migration name — exiting"
+    echo "[startup] Failed migration detected (P3009)."
+
+    FAILED_MIGRATION=$(echo "$OUTPUT" \
+      | grep "The \`" \
+      | sed 's/.*The `\([^`]*\)` migration.*/\1/')
+
+    if [ -z "$FAILED_MIGRATION" ]; then
+      echo "[startup] Could not extract migration name."
       exit 1
     fi
-    echo "[startup] Table already exists; marking migration as applied: $FAILED2"
-    npx prisma migrate resolve --applied "$FAILED2"
 
-    # --- Third attempt (should succeed now) ---
-    echo "[startup] Final migration retry..."
-    npx prisma migrate deploy
+    echo "[startup] Marking rolled back: $FAILED_MIGRATION"
+
+    npx prisma migrate resolve \
+      --rolled-back "$FAILED_MIGRATION"
+
+    echo "[startup] Retrying migration..."
+
+    ############################################
+    # SECOND ATTEMPT
+    ############################################
+
+    if run_migration; then
+      echo "[startup] Migration retry successful."
+    else
+
+      ############################################
+      # HANDLE 42P07 SAFELY
+      ############################################
+
+      if echo "$OUTPUT" | grep -q "42P07"; then
+
+        echo ""
+        echo "[startup] ERROR: Relation/Table already exists (42P07)"
+        echo "[startup] Manual migration review required."
+        echo ""
+        echo "Possible causes:"
+        echo " - Partial migration execution"
+        echo " - Existing schema mismatch"
+        echo " - Client DB drift"
+        echo ""
+        echo "Recommended action:"
+        echo "1. Check migration status"
+        echo "2. Verify DB schema manually"
+        echo "3. Resolve migration intentionally"
+        echo ""
+        echo "Commands:"
+        echo "  npx prisma migrate status"
+        echo "  npx prisma migrate resolve --applied <migration>"
+        echo ""
+
+        exit 1
+      fi
+
+      echo "[startup] Migration retry failed."
+      exit 1
+    fi
+
   else
+    echo "[startup] Migration failed."
     exit 1
   fi
-
-elif echo "$MIGRATE_OUT" | grep -q "42P07"; then
-  # First attempt itself hit "relation already exists" — mark applied directly
-  FAILED=$(echo "$MIGRATE_OUT" | grep "Migration name:" | sed "s/.*Migration name: *//" | tr -d '[:space:]')
-  if [ -z "$FAILED" ]; then
-    echo "[startup] 42P07 detected but could not extract migration name — exiting"
-    exit 1
-  fi
-  echo "[startup] Table already exists; marking migration as applied: $FAILED"
-  npx prisma migrate resolve --applied "$FAILED"
-  echo "[startup] Retrying migration deploy..."
-  npx prisma migrate deploy
-else
-  exit 1
 fi
 
-echo "[startup] Migrations complete."
+echo "[startup] Database migrations complete."
 
-if [ "${SEED_DB}" = "true" ]; then
-  echo "[startup] Seeding database..."
-  npm run seed || echo "[startup] Warning: seedreferencetypename.js failed (skipping)"
-  # node seedreferencetypename.js   || echo "[startup] Warning: seedreferencetypename.js failed (skipping)"
-  # node seedReferenceMaster.js     || echo "[startup] Warning: seedReferenceMaster.js failed (skipping)"
-  # node seedPartNumberBase.js      || echo "[startup] Warning: seedPartNumberBase.js failed (skipping)"
-  # node seedSupplierMaster.js      || echo "[startup] Warning: seedSupplierMaster.js failed (skipping)"
-  # node seedCustomerMaster.js      || echo "[startup] Warning: seedCustomerMaster.js failed (skipping)"
-  # node seedPurchaseRequest.js     || echo "[startup] Warning: seedPurchaseRequest.js failed (skipping)"
-  # node seedPurchaseMaster.js      || echo "[startup] Warning: seedPurchaseMaster.js failed (skipping)"
-  # node prisma/seedAuthUsers.js    || echo "[startup] Warning: seedAuthUsers.js failed (skipping)"
+############################################
+# OPTIONAL SEEDING
+############################################
+
+if [ "$SEED_DB" = "true" ]; then
+
+  echo "[startup] Running database seed..."
+
+  npm run seed || {
+    echo "[startup] Warning: seed failed."
+  }
+
   echo "[startup] Seeding complete."
 fi
 
-echo "[startup] Starting server..."
+############################################
+# START SERVER
+############################################
+
+echo "[startup] Starting Node server..."
+
 exec node src/server.js

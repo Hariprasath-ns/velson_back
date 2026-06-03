@@ -15,16 +15,6 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg(new pg.Pool({ connectionString: connString })),
 });
 
-const CUSTOMER_TYPE_ENTRIES = [
-  { code: '001', description: 'Regular' },
-  { code: '002', description: 'Dealer' },
-  { code: '003', description: 'Distributor' },
-  { code: '004', description: 'Retailer' },
-  { code: '005', description: 'OEM' },
-  { code: '006', description: 'Government' },
-  { code: '007', description: 'Institutional' },
-];
-
 const MOCK_CUSTOMERS = [
   {
     cCode: 'CUS97',
@@ -63,38 +53,6 @@ const MOCK_CUSTOMERS = [
 
 async function main() {
   console.log(`[seed] Connecting to ${dbEnv} database...`);
-
-  // 1. Ensure Customer_Type entries exist in ReferenceMaster
-  const refType = await prisma.referenceType.findUnique({
-    where: { name: 'Customer_Type' },
-  });
-
-  if (!refType) {
-    console.warn('[seed] WARNING: Customer_Type not found in reference_type. Run seedreferencetypename.js first.');
-  } else {
-    const existing = await prisma.referenceMaster.findMany({
-      where: { referenceType: 'Customer_Type' },
-      select: { description: true },
-    });
-    const existingDesc = new Set(existing.map(r => r.description));
-
-    const toInsert = CUSTOMER_TYPE_ENTRIES.filter(e => !existingDesc.has(e.description));
-    if (toInsert.length > 0) {
-      await prisma.referenceMaster.createMany({
-        data: toInsert.map(e => ({
-          referenceType: 'Customer_Type',
-          referenceTypeId: refType.id,
-          code: e.code,
-          description: e.description,
-          updatedBy: 'Admin',
-        })),
-        skipDuplicates: true,
-      });
-      console.log(`[seed] Inserted ${toInsert.length} Customer_Type entries:`, toInsert.map(e => e.description).join(', '));
-    } else {
-      console.log('[seed] All Customer_Type entries already exist.');
-    }
-  }
 
   // 2. Seed the 4 mock customer records
   const existingCodes = new Set(

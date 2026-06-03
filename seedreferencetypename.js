@@ -63,6 +63,7 @@ const REF_TYPE_NAMES = [
   "QC_STATUS",
   "QC_Type",
   "Quotation_confirmed_Status",
+  "Service_Booking_Status",
   "Spare_Issue_Type",
   "State",
   "Status",

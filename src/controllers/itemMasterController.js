@@ -15,48 +15,48 @@ export const upload = multer({
   },
 });
 
-const parseOptInt   = v => (v !== '' && v != null) ? parseInt(v, 10)   : null;
-const parseOptFloat = v => (v !== '' && v != null) ? parseFloat(v)      : null;
+const parseOptInt = v => (v !== '' && v != null) ? parseInt(v, 10) : null;
+const parseOptFloat = v => (v !== '' && v != null) ? parseFloat(v) : null;
 
 const buildData = (body) => ({
-  groupId:         parseOptInt(body.groupId),
-  partNo:          body.partNo?.trim(),
+  groupId: parseOptInt(body.groupId),
+  partNo: body.partNo?.trim(),
   outsourcePartNo: body.outsourcePartNo || null,
-  partName:        body.partName?.trim(),
-  modelId:         parseOptInt(body.modelId),
-  brand:           body.brand || null,
-  description:     body.description || null,
-  size:            body.size || null,
-  weight:          parseOptFloat(body.weight),
-  unitId:          parseOptInt(body.unitId),
-  hsnCode:         body.hsnCode || null,
-  purchaseRate:    parseOptFloat(body.purchaseRate),
-  marginPercent:   parseOptFloat(body.marginPercent),
-  rate:            parseOptFloat(body.rate),
-  currencyId:      parseOptInt(body.currencyId),
-  taxId:           parseOptInt(body.taxId),
-  subGroupId:      parseOptInt(body.subGroupId),
-  storeId:         parseOptInt(body.storeId),
-  rackNo:          body.rackNo || null,
-  location:        body.location || null,
-  itemTypeId:      parseOptInt(body.itemTypeId),
-  qcTypeId:        parseOptInt(body.qcTypeId),
+  partName: body.partName?.trim(),
+  modelId: parseOptInt(body.modelId),
+  brand: body.brand || null,
+  description: body.description || null,
+  size: body.size || null,
+  weight: parseOptFloat(body.weight),
+  unitId: parseOptInt(body.unitId),
+  hsnCode: body.hsnCode || null,
+  purchaseRate: parseOptFloat(body.purchaseRate),
+  marginPercent: parseOptFloat(body.marginPercent),
+  rate: parseOptFloat(body.rate),
+  currencyId: parseOptInt(body.currencyId),
+  taxId: parseOptInt(body.taxId),
+  subGroupId: parseOptInt(body.subGroupId),
+  storeId: parseOptInt(body.storeId),
+  rackNo: body.rackNo || null,
+  location: body.location || null,
+  itemTypeId: parseOptInt(body.itemTypeId),
+  qcTypeId: parseOptInt(body.qcTypeId),
   materialGradeId: parseOptInt(body.materialGradeId),
-  materialTypeId:  parseOptInt(body.materialTypeId),
-  rawMaterialId:   parseOptInt(body.rawMaterialId),
-  rmLength:        body.rmLength || null,
-  rawMaterialWt:   parseOptFloat(body.rawMaterialWt),
-  fgMaterialWt:    parseOptFloat(body.fgMaterialWt),
-  reorderLevel:    parseOptFloat(body.reorderLevel),
-  minStock:        parseOptFloat(body.minStock),
-  imagePath:       body.imagePath  || null,
-  imageData:       body.imageData  || null,
-  imageMimeType:   body.imageMimeType || null,
-  pdfPath:         body.pdfPath    || null,
-  pdfData:         body.pdfData    || null,
-  pdfMimeType:     body.pdfMimeType || null,
-  createdBy:       body.createdBy || 'ADMIN',
-  updatedBy:       body.updatedBy || 'ADMIN',
+  materialTypeId: parseOptInt(body.materialTypeId),
+  rawMaterialId: parseOptInt(body.rawMaterialId),
+  rmLength: body.rmLength || null,
+  rawMaterialWt: parseOptFloat(body.rawMaterialWt),
+  fgMaterialWt: parseOptFloat(body.fgMaterialWt),
+  reorderLevel: parseOptFloat(body.reorderLevel),
+  minStock: parseOptFloat(body.minStock),
+  imagePath: body.imagePath || null,
+  imageData: body.imageData || null,
+  imageMimeType: body.imageMimeType || null,
+  pdfPath: body.pdfPath || null,
+  pdfData: body.pdfData || null,
+  pdfMimeType: body.pdfMimeType || null,
+  createdBy: body.createdBy || 'ADMIN',
+  updatedBy: body.updatedBy || 'ADMIN',
 });
 
 export const getAll = async (req, res) => {
@@ -139,14 +139,14 @@ export const remove = async (req, res) => {
 export const uploadFiles = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    
+
     const updateData = { updatedBy: req.body.updatedBy || 'ADMIN' };
-    
+
     if (req.files?.image?.[0]) {
       updateData.imageData = req.files.image[0].buffer;
       updateData.imageMimeType = req.files.image[0].mimetype;
     }
-    
+
     if (req.files?.pdf?.[0]) {
       updateData.pdfData = req.files.pdf[0].buffer;
       updateData.pdfMimeType = req.files.pdf[0].mimetype;
@@ -188,7 +188,7 @@ export const downloadImage = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const item = await ItemMasterModel.getItemMasterById(req.db, id);
-    
+
     if (!item || !item.imageData) {
       return res.status(404).json({ success: false, message: 'Image not found' });
     }
@@ -206,7 +206,7 @@ export const downloadPdf = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const item = await ItemMasterModel.getItemMasterById(req.db, id);
-    
+
     if (!item || !item.pdfData) {
       return res.status(404).json({ success: false, message: 'PDF not found' });
     }
@@ -224,7 +224,7 @@ export const downloadUploadImage = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const item = await ItemMasterModel.getUploadById(req.db, id);
-    
+
     if (!item || !item.imageData) {
       return res.status(404).json({ success: false, message: 'Image not found' });
     }
@@ -242,7 +242,7 @@ export const downloadUploadPdf = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const item = await ItemMasterModel.getUploadById(req.db, id);
-    
+
     if (!item || !item.pdfData) {
       return res.status(404).json({ success: false, message: 'PDF not found' });
     }

@@ -6,6 +6,10 @@ dotenv.config();
 const db = process.env.DB_ENV === "neon" ? neonPrisma : dockerPrisma;
 
 const seedData = [
+  //Serive_Booking_Status
+   { referenceType: "Service_Booking_Status", code: "001", description: "Open", updatedBy: "admin" },
+  { referenceType: "Service_Booking_Status", code: "002", description: "Close", updatedBy: "admin" },
+
   //GRN Type
   { referenceType: "GRN_Type", code: "001", description: "GRN against PO", updatedBy: "admin" },
   { referenceType: "GRN_Type", code: "002", description: "Direct PO", updatedBy: "admin" },

@@ -39,6 +39,7 @@ import materialRequestRoute from "./routes/materialRequestRoute.js";
 import partUsageListRoute from "./routes/partUsageListRoute.js";
 import qcCheckMethodRoute from "./routes/qcCheckMethodRoute.js";
 import systemInfoMasterRoute from "./routes/systemInfoMasterRoute.js";
+import bomCreationRoute from "./routes/bomCreationRoute.js";
 
 dotenv.config();
 const app = express();
@@ -84,6 +85,7 @@ app.use("/api", materialRequestRoute);
 app.use("/api", partUsageListRoute);
 app.use("/api", qcCheckMethodRoute);
 app.use("/api", systemInfoMasterRoute);
+app.use("/api", bomCreationRoute);
 
 const PORT = process.env.PORT || 5000;
 

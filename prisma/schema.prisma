@@ -184,6 +184,7 @@ model ItemMaster {
   fgMaterialWt           Float?
   reorderLevel           Float?
   minStock               Float?
+  routeCardNo            String?
   createdBy              String?
   updatedBy              String?
   createdAt              DateTime                @default(now())
@@ -875,4 +876,29 @@ model ServiceDetail {
 
   @@map("service_detail")
 }
+
+model BomCreation {
+  id              Int      @id @default(autoincrement())
+  bomNo           String   @unique
+  date            DateTime @default(now())
+  customerName    String
+  customerCode    String?
+  vehicleCount    Int?
+  serviceJobNo    String
+  vehicleSerialNo String?
+  model           String?
+  fileLocation    String?
+  fileName        String?
+  groupName       String?
+  assemblyPartNo  String?
+  status          String   @default("Created")
+  excelRows       Json?
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("bom_creation")
+}
+
 

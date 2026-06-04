@@ -18,46 +18,57 @@ export const upload = multer({
 const parseOptInt = v => (v !== '' && v != null) ? parseInt(v, 10) : null;
 const parseOptFloat = v => (v !== '' && v != null) ? parseFloat(v) : null;
 
-const buildData = (body) => ({
-  groupId: parseOptInt(body.groupId),
-  partNo: body.partNo?.trim(),
-  outsourcePartNo: body.outsourcePartNo || null,
-  partName: body.partName?.trim(),
-  modelId: parseOptInt(body.modelId),
-  brand: body.brand || null,
-  description: body.description || null,
-  size: body.size || null,
-  weight: parseOptFloat(body.weight),
-  unitId: parseOptInt(body.unitId),
-  hsnCode: body.hsnCode || null,
-  purchaseRate: parseOptFloat(body.purchaseRate),
-  marginPercent: parseOptFloat(body.marginPercent),
-  rate: parseOptFloat(body.rate),
-  currencyId: parseOptInt(body.currencyId),
-  taxId: parseOptInt(body.taxId),
-  subGroupId: parseOptInt(body.subGroupId),
-  storeId: parseOptInt(body.storeId),
-  rackNo: body.rackNo || null,
-  location: body.location || null,
-  itemTypeId: parseOptInt(body.itemTypeId),
-  qcTypeId: parseOptInt(body.qcTypeId),
-  materialGradeId: parseOptInt(body.materialGradeId),
-  materialTypeId: parseOptInt(body.materialTypeId),
-  rawMaterialId: parseOptInt(body.rawMaterialId),
-  rmLength: body.rmLength || null,
-  rawMaterialWt: parseOptFloat(body.rawMaterialWt),
-  fgMaterialWt: parseOptFloat(body.fgMaterialWt),
-  reorderLevel: parseOptFloat(body.reorderLevel),
-  minStock: parseOptFloat(body.minStock),
-  imagePath: body.imagePath || null,
-  imageData: body.imageData || null,
-  imageMimeType: body.imageMimeType || null,
-  pdfPath: body.pdfPath || null,
-  pdfData: body.pdfData || null,
-  pdfMimeType: body.pdfMimeType || null,
-  createdBy: body.createdBy || 'ADMIN',
-  updatedBy: body.updatedBy || 'ADMIN',
-});
+const buildData = (body, isUpdate = false) => {
+  const data = {
+    groupId: parseOptInt(body.groupId),
+    partNo: body.partNo?.trim(),
+    outsourcePartNo: body.outsourcePartNo || null,
+    partName: body.partName?.trim(),
+    modelId: parseOptInt(body.modelId),
+    brand: body.brand || null,
+    description: body.description || null,
+    size: body.size || null,
+    weight: parseOptFloat(body.weight),
+    unitId: parseOptInt(body.unitId),
+    hsnCode: body.hsnCode || null,
+    purchaseRate: parseOptFloat(body.purchaseRate),
+    marginPercent: parseOptFloat(body.marginPercent),
+    rate: parseOptFloat(body.rate),
+    currencyId: parseOptInt(body.currencyId),
+    taxId: parseOptInt(body.taxId),
+    subGroupId: parseOptInt(body.subGroupId),
+    storeId: parseOptInt(body.storeId),
+    rackNo: body.rackNo || null,
+    location: body.location || null,
+    itemTypeId: parseOptInt(body.itemTypeId),
+    qcTypeId: parseOptInt(body.qcTypeId),
+    materialGradeId: parseOptInt(body.materialGradeId),
+    materialTypeId: parseOptInt(body.materialTypeId),
+    rawMaterialId: parseOptInt(body.rawMaterialId),
+    rmLength: body.rmLength || null,
+    rawMaterialWt: parseOptFloat(body.rawMaterialWt),
+    fgMaterialWt: parseOptFloat(body.fgMaterialWt),
+    reorderLevel: parseOptFloat(body.reorderLevel),
+    minStock: parseOptFloat(body.minStock),
+    routeCardNo: body.routeCardNo || null,
+  };
+
+  if (!isUpdate || body.imagePath !== undefined) data.imagePath = body.imagePath || null;
+  if (!isUpdate || body.imageData !== undefined) data.imageData = body.imageData || null;
+  if (!isUpdate || body.imageMimeType !== undefined) data.imageMimeType = body.imageMimeType || null;
+  if (!isUpdate || body.pdfPath !== undefined) data.pdfPath = body.pdfPath || null;
+  if (!isUpdate || body.pdfData !== undefined) data.pdfData = body.pdfData || null;
+  if (!isUpdate || body.pdfMimeType !== undefined) data.pdfMimeType = body.pdfMimeType || null;
+
+  if (isUpdate) {
+    data.updatedBy = body.updatedBy || 'ADMIN';
+  } else {
+    data.createdBy = body.createdBy || 'ADMIN';
+    data.updatedBy = body.updatedBy || 'ADMIN';
+  }
+
+  return data;
+};
 
 export const getAll = async (req, res) => {
   try {
@@ -88,7 +99,7 @@ export const create = async (req, res) => {
     if (!partNo || !partName) {
       return res.status(400).json({ success: false, message: 'partNo and partName are required' });
     }
-    const record = await ItemMasterModel.createItemMaster(req.db, buildData(req.body));
+    const record = await ItemMasterModel.createItemMaster(req.db, buildData(req.body, false));
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
@@ -106,8 +117,7 @@ export const update = async (req, res) => {
     if (!partNo || !partName) {
       return res.status(400).json({ success: false, message: 'partNo and partName are required' });
     }
-    const data = buildData(req.body);
-    delete data.createdBy;
+    const data = buildData(req.body, true);
     const record = await ItemMasterModel.updateItemMaster(req.db, id, data);
     res.json({ success: true, data: record });
   } catch (err) {

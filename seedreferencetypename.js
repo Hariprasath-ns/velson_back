@@ -20,6 +20,7 @@ const REF_TYPE_NAMES = [
   "Account Type",
   "App_User",
   "Area",
+  "Barcode_Type",
   "Booking_Status",
   "Booking_Vehicle_Name",
   "Breakdown_Email",

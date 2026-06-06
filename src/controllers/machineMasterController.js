@@ -29,6 +29,7 @@ export const create = async (req, res) => {
       workHoursPerDay, model, country, currency, vendorId,
       installationPlace, remarks, yearOfFG, dateOfPurchase,
       dateOfInstallation, warantyExpDate, amcExpDate, status, createdBy,
+      manufacture, price,
     } = req.body;
 
     if (!machineName || !machineName.trim()) {
@@ -51,6 +52,8 @@ export const create = async (req, res) => {
       vendorId:           vendorId           || null,
       installationPlace:  installationPlace  || null,
       remarks:            remarks            || null,
+      manufacture:        manufacture        || null,
+      price:              (price !== undefined && price !== null && price !== '') ? parseFloat(price) : null,
       yearOfFG:           toDate(yearOfFG),
       dateOfPurchase:     toDate(dateOfPurchase),
       dateOfInstallation: toDate(dateOfInstallation),
@@ -79,6 +82,7 @@ export const update = async (req, res) => {
       workHoursPerDay, model, country, currency, vendorId,
       installationPlace, remarks, yearOfFG, dateOfPurchase,
       dateOfInstallation, warantyExpDate, amcExpDate, status, updatedBy,
+      manufacture, price,
     } = req.body;
 
     if (!machineName || !machineName.trim()) {
@@ -96,6 +100,8 @@ export const update = async (req, res) => {
       vendorId:           vendorId           || null,
       installationPlace:  installationPlace  || null,
       remarks:            remarks            || null,
+      manufacture:        manufacture        || null,
+      price:              (price !== undefined && price !== null && price !== '') ? parseFloat(price) : null,
       yearOfFG:           toDate(yearOfFG),
       dateOfPurchase:     toDate(dateOfPurchase),
       dateOfInstallation: toDate(dateOfInstallation),

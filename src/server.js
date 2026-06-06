@@ -40,6 +40,9 @@ import partUsageListRoute from "./routes/partUsageListRoute.js";
 import qcCheckMethodRoute from "./routes/qcCheckMethodRoute.js";
 import systemInfoMasterRoute from "./routes/systemInfoMasterRoute.js";
 import bomCreationRoute from "./routes/bomCreationRoute.js";
+import jobCardRoute from "./routes/jobCardRoute.js";
+import processMasterRoute from "./routes/processMasterRoute.js";
+
 
 dotenv.config();
 const app = express();
@@ -86,6 +89,9 @@ app.use("/api", partUsageListRoute);
 app.use("/api", qcCheckMethodRoute);
 app.use("/api", systemInfoMasterRoute);
 app.use("/api", bomCreationRoute);
+app.use("/api", jobCardRoute);
+app.use("/api", processMasterRoute);
+
 
 const PORT = process.env.PORT || 5000;
 
@@ -93,3 +99,5 @@ app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   await checkConnections();
 });
+// Nodemon reload trigger
+

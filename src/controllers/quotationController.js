@@ -1,5 +1,7 @@
 import * as QuotationModel from '../models/quotationModel.js'
 import multer from 'multer'
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 const storage = multer.memoryStorage()
 export const upload = multer({
@@ -28,8 +30,8 @@ export const getNextNo = async (req, res) => {
     const result = await QuotationModel.getNextQuotationNo(req.db)
     res.json({ success: true, ...result })
   } catch (err) {
-    console.error('[quotation] getNextNo error:', err)
-    res.status(500).json({ success: false, message: err.message })
+    
+    throw err;
   }
 }
 
@@ -38,8 +40,8 @@ export const getAll = async (req, res) => {
     const data = await QuotationModel.getAllQuotations(req.db)
     res.json({ success: true, data })
   } catch (err) {
-    console.error('[quotation] getAll error:', err)
-    res.status(500).json({ success: false, message: err.message })
+    
+    throw err;
   }
 }
 
@@ -47,11 +49,11 @@ export const getOne = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)
     const data = await QuotationModel.getQuotationById(req.db, id)
-    if (!data) return res.status(404).json({ success: false, message: 'Quotation not found' })
+    if (!data) throw new NotFoundError('Quotation not found');
     res.json({ success: true, data })
   } catch (err) {
-    console.error('[quotation] getOne error:', err)
-    res.status(500).json({ success: false, message: err.message })
+    
+    throw err;
   }
 }
 
@@ -67,7 +69,7 @@ export const create = async (req, res) => {
     } = req.body
 
     if (!quotationNo || !customerId) {
-      return res.status(400).json({ success: false, message: 'quotationNo and customerId are required' })
+      throw new BadRequestError('quotationNo and customerId are required');
     }
 
     const headerData = {
@@ -102,13 +104,13 @@ export const create = async (req, res) => {
     res.status(201).json({ success: true, data: record })
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Quotation number already exists' })
+      throw new ConflictError('Quotation number already exists');
     }
     if (err.code === 'P2003') {
-      return res.status(400).json({ success: false, message: 'Invalid customer reference' })
+      throw new BadRequestError('Invalid customer reference');
     }
-    console.error('[quotation] create error:', err)
-    res.status(500).json({ success: false, message: err.message })
+    
+    throw err;
   }
 }
 
@@ -151,10 +153,10 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record })
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Quotation not found' })
+      throw new NotFoundError('Quotation not found');
     }
-    console.error('[quotation] update error:', err)
-    res.status(500).json({ success: false, message: err.message })
+    
+    throw err;
   }
 }
 
@@ -165,10 +167,10 @@ export const remove = async (req, res) => {
     res.json({ success: true })
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Quotation not found' })
+      throw new NotFoundError('Quotation not found');
     }
-    console.error('[quotation] delete error:', err)
-    res.status(500).json({ success: false, message: err.message })
+    
+    throw err;
   }
 }
 
@@ -176,7 +178,7 @@ export const uploadDocument = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No document uploaded' })
+      throw new BadRequestError('No document uploaded');
     }
 
     const updateData = {
@@ -193,8 +195,8 @@ export const uploadDocument = async (req, res) => {
     
     res.json({ success: true, data: record })
   } catch (err) {
-    console.error('[quotation] uploadDocument error:', err)
-    res.status(500).json({ success: false, message: err.message })
+    
+    throw err;
   }
 }
 
@@ -204,14 +206,115 @@ export const downloadDocument = async (req, res) => {
     const quotation = await req.db.quotationMaster.findUnique({ where: { id } })
     
     if (!quotation || !quotation.documentData) {
-      return res.status(404).json({ success: false, message: 'Document not found' })
+      throw new NotFoundError('Document not found');
     }
 
     res.set('Content-Type', quotation.documentMimeType || 'application/pdf')
     res.set('Content-Disposition', `inline; filename="${quotation.documentPath || 'document'}"`)
     res.send(quotation.documentData)
   } catch (err) {
-    console.error('[quotation] downloadDocument error:', err)
-    res.status(500).json({ success: false, message: err.message })
+    
+    throw err;
   }
 }
+
+// Marketing Log Handlers
+export const getMarketingLogs = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query
+    const where = {}
+    if (startDate || endDate) {
+      where.logDate = {}
+      if (startDate) {
+        const d = new Date(startDate + 'T00:00:00.000Z')
+        if (!isNaN(d.getTime())) where.logDate.gte = d
+      }
+      if (endDate) {
+        const d = new Date(endDate + 'T23:59:59.999Z')
+        if (!isNaN(d.getTime())) where.logDate.lte = d
+      }
+      if (Object.keys(where.logDate).length === 0) {
+        delete where.logDate
+      }
+    }
+    const data = await req.db.marketingLog.findMany({
+      where,
+      orderBy: { logDate: 'desc' },
+    })
+    res.json({ success: true, data })
+  } catch (err) {
+    
+    throw err;
+  }
+}
+
+export const createMarketingLog = async (req, res) => {
+  try {
+    const { ledgerName, customerCode, logDate, remarks, createdBy } = req.body
+    if (!ledgerName || !customerCode) {
+      throw new BadRequestError('ledgerName and customerCode are required');
+    }
+    const record = await req.db.marketingLog.create({
+      data: {
+        ledgerName,
+        customerCode,
+        logDate: logDate ? new Date(logDate) : new Date(),
+        remarks: remarks || '',
+        createdBy: createdBy || 'ADMIN',
+      }
+    })
+    res.status(201).json({ success: true, data: record })
+  } catch (err) {
+    
+    throw err;
+  }
+}
+
+export const uploadMarketingLogDoc = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (!req.file) {
+      throw new BadRequestError('No document uploaded');
+    }
+    const record = await req.db.marketingLog.update({
+      where: { id },
+      data: {
+        documentData: req.file.buffer,
+        documentMimeType: req.file.mimetype,
+        documentPath: req.file.originalname,
+      }
+    })
+    res.json({ success: true, data: record })
+  } catch (err) {
+    
+    throw err;
+  }
+}
+
+export const downloadMarketingLogDoc = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    const log = await req.db.marketingLog.findUnique({ where: { id } })
+    if (!log || !log.documentData) {
+      throw new NotFoundError('Document not found');
+    }
+    res.set('Content-Type', log.documentMimeType || 'application/octet-stream')
+    res.set('Content-Disposition', `inline; filename="${log.documentPath || 'document'}"`)
+    res.send(log.documentData)
+  } catch (err) {
+    
+    throw err;
+  }
+}
+
+export const deleteMarketingLog = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    await req.db.marketingLog.delete({ where: { id } })
+    res.json({ success: true })
+  } catch (err) {
+    
+    throw err;
+  }
+}
+

@@ -1,4 +1,6 @@
 import * as Model from '../models/qcCheckMethodModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 const buildData = (body) => ({
   checkCode:   body.checkCode?.trim().toUpperCase(),
@@ -15,8 +17,8 @@ export const getAll = async (req, res) => {
     const data = await Model.getAll(req.db, { search });
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[qcCheckMethod] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -24,11 +26,11 @@ export const getOne = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const data = await Model.getById(req.db, id);
-    if (!data) return res.status(404).json({ success: false, message: 'Record not found' });
+    if (!data) throw new NotFoundError('Record not found');
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[qcCheckMethod] getOne error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -36,16 +38,16 @@ export const create = async (req, res) => {
   try {
     const { checkCode, checkName } = req.body;
     if (!checkCode || !checkName) {
-      return res.status(400).json({ success: false, message: 'checkCode and checkName are required' });
+      throw new BadRequestError('checkCode and checkName are required');
     }
     const record = await Model.create(req.db, buildData(req.body));
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(400).json({ success: false, message: 'Check code already exists' });
+      throw new BadRequestError('Check code already exists');
     }
-    console.error('[qcCheckMethod] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -54,7 +56,7 @@ export const update = async (req, res) => {
     const id = parseInt(req.params.id, 10);
     const { checkCode, checkName } = req.body;
     if (!checkCode || !checkName) {
-      return res.status(400).json({ success: false, message: 'checkCode and checkName are required' });
+      throw new BadRequestError('checkCode and checkName are required');
     }
     const data = buildData(req.body);
     delete data.createdBy;
@@ -62,13 +64,13 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Record not found' });
+      throw new NotFoundError('Record not found');
     }
     if (err.code === 'P2002') {
-      return res.status(400).json({ success: false, message: 'Check code already exists' });
+      throw new BadRequestError('Check code already exists');
     }
-    console.error('[qcCheckMethod] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -79,9 +81,9 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Record not found' });
+      throw new NotFoundError('Record not found');
     }
-    console.error('[qcCheckMethod] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

@@ -46,9 +46,11 @@ export const createJobCard = (db, headerData, detailRows) =>
 
 export const updateJobCard = (db, id, headerData, detailRows) =>
   db.$transaction(async (tx) => {
-    await tx.jobCardLineItem.deleteMany({ where: { jobCardId: id } });
+    if (detailRows !== undefined) {
+      await tx.jobCardLineItem.deleteMany({ where: { jobCardId: id } });
+    }
     await tx.jobCard.update({ where: { id }, data: headerData });
-    if (detailRows.length > 0) {
+    if (detailRows !== undefined && detailRows.length > 0) {
       await tx.jobCardLineItem.createMany({
         data: detailRows.map((r, i) => ({ ...r, jobCardId: id, slNo: i + 1 })),
       });
@@ -61,3 +63,39 @@ export const updateJobCard = (db, id, headerData, detailRows) =>
 
 export const deleteJobCard = (db, id) =>
   db.jobCard.delete({ where: { id } });
+
+export const upsertJobCardProcess = async (db, data) => {
+  const existing = await db.jobCardLineItem.findFirst({
+    where: {
+      jobCardId: data.jobCardId,
+      partNo: data.partNo,
+      processName: data.processName,
+    }
+  });
+
+  if (existing) {
+    return db.jobCardLineItem.update({
+      where: { id: existing.id },
+      data: {
+        processDate: data.processDate,
+        state: data.state,
+        empName: data.empName,
+        machineName: data.machineName,
+        workCenterNo: data.workCenterNo,
+        remarks: data.remarks,
+        notApplicable: data.notApplicable,
+      }
+    });
+  } else {
+    const count = await db.jobCardLineItem.count({
+      where: { jobCardId: data.jobCardId }
+    });
+    return db.jobCardLineItem.create({
+      data: {
+        ...data,
+        slNo: count + 1
+      }
+    });
+  }
+};
+

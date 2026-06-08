@@ -1,4 +1,6 @@
 import * as ReferenceMasterModel from "../models/referenceMasterModel.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 export const getRecordsByType = async (req, res) => {
   try {
@@ -12,8 +14,8 @@ export const getRecordsByType = async (req, res) => {
       data: records
     });
   } catch (err) {
-    console.error("[referenceMaster] getRecordsByType error:", err);
-    res.status(500).json({ error: err.message });
+    
+    throw err;
   }
 };
 
@@ -21,7 +23,7 @@ export const createRecord = async (req, res) => {
   try {
     const { referenceType, code, description, updatedBy } = req.body;
     if (!referenceType || !code || !description) {
-      return res.status(400).json({ error: "referenceType, code, and description are required" });
+      throw new BadRequestError("referenceType, code, and description are required");
     }
     const record = await ReferenceMasterModel.createReferenceMaster(req.db, { 
       referenceType, 
@@ -34,7 +36,7 @@ export const createRecord = async (req, res) => {
     // or frontend can refetch.
     res.status(201).json({ success: true, data: record });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    throw err;
   }
 };
 
@@ -51,9 +53,9 @@ export const updateRecord = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === "P2025") {
-      return res.status(404).json({ error: "Record not found" });
+      throw new NotFoundError("Record not found");
     }
-    res.status(500).json({ error: err.message });
+    throw err;
   }
 };
 
@@ -64,8 +66,8 @@ export const deleteRecord = async (req, res) => {
     res.status(200).json({ success: true });
   } catch (err) {
     if (err.code === "P2025") {
-      return res.status(404).json({ error: "Record not found" });
+      throw new NotFoundError("Record not found");
     }
-    res.status(500).json({ error: err.message });
+    throw err;
   }
 };

@@ -1,4 +1,6 @@
 import * as JobCardModel from '../models/jobCardModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 const toFloat = (v) => (v !== '' && v != null ? parseFloat(v) || 0 : 0);
 
@@ -38,8 +40,8 @@ export const getAll = async (req, res) => {
     const records = await JobCardModel.getAllJobCards(req.db);
     res.json({ success: true, data: records.map(mapResponse) });
   } catch (err) {
-    console.error('[jobCard] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -48,8 +50,8 @@ export const getNextNo = async (req, res) => {
     const jobNo = await JobCardModel.getNextJobNo(req.db);
     res.json({ success: true, jobNo });
   } catch (err) {
-    console.error('[jobCard] getNextNo error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -60,7 +62,7 @@ export const create = async (req, res) => {
     } = req.body;
 
     if (!jobNo) {
-      return res.status(400).json({ success: false, message: 'jobNo is required' });
+      throw new BadRequestError('jobNo is required');
     }
 
     const { partImage: imgBuffer, partImageMime: imgMime } = parseBase64Image(partImage);
@@ -81,10 +83,10 @@ export const create = async (req, res) => {
     res.status(201).json({ success: true, data: mapResponse(record) });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Job number already exists' });
+      throw new ConflictError('Job number already exists');
     }
-    console.error('[jobCard] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -92,29 +94,36 @@ export const update = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const {
-      model, qtyV, currentDate, priority, requiredDate, note, partImage, lineItems
+      model, qtyV, currentDate, priority, requiredDate, note, partImage, lineItems,
+      status, approvedDate, rejectedDate, cancelledDate, cancellationReason
     } = req.body;
 
     const { partImage: imgBuffer, partImageMime: imgMime } = parseBase64Image(partImage);
 
     const headerData = {
-      model: model || null,
-      qtyV: qtyV ? toFloat(qtyV) : null,
-      currentDate: currentDate ? new Date(currentDate) : null,
-      priority: priority || null,
-      requiredDate: requiredDate ? new Date(requiredDate) : null,
-      note: note || null,
+      ...(model !== undefined && { model: model || null }),
+      ...(qtyV !== undefined && { qtyV: qtyV ? toFloat(qtyV) : null }),
+      ...(currentDate !== undefined && { currentDate: currentDate ? new Date(currentDate) : null }),
+      ...(priority !== undefined && { priority: priority || null }),
+      ...(requiredDate !== undefined && { requiredDate: requiredDate ? new Date(requiredDate) : null }),
+      ...(note !== undefined && { note: note || null }),
       ...(partImage !== undefined && { partImage: imgBuffer, partImageMime: imgMime }),
+      status: status !== undefined ? status : undefined,
+      approvedDate: approvedDate ? new Date(approvedDate) : (approvedDate === null ? null : undefined),
+      rejectedDate: rejectedDate ? new Date(rejectedDate) : (rejectedDate === null ? null : undefined),
+      cancelledDate: cancelledDate ? new Date(cancelledDate) : (cancelledDate === null ? null : undefined),
+      cancellationReason: cancellationReason !== undefined ? cancellationReason : undefined,
     };
 
-    const record = await JobCardModel.updateJobCard(req.db, id, headerData, buildDetailRows(lineItems));
+    const detailRows = lineItems !== undefined ? buildDetailRows(lineItems) : undefined;
+    const record = await JobCardModel.updateJobCard(req.db, id, headerData, detailRows);
     res.json({ success: true, data: mapResponse(record) });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Job Card not found' });
+      throw new NotFoundError('Job Card not found');
     }
-    console.error('[jobCard] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -125,9 +134,41 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Job Card not found' });
+      throw new NotFoundError('Job Card not found');
     }
-    console.error('[jobCard] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
+
+export const updateProcess = async (req, res) => {
+  try {
+    const {
+      jobCardId, partNo, partName, processName, processDate, state,
+      empName, machineName, workCenterNo, remarks, notApplicable
+    } = req.body;
+
+    if (!jobCardId || !partNo || !processName) {
+      throw new BadRequestError('jobCardId, partNo, and processName are required');
+    }
+
+    const result = await JobCardModel.upsertJobCardProcess(req.db, {
+      jobCardId: parseInt(jobCardId, 10),
+      partNo,
+      partName: partName || '',
+      processName,
+      processDate: processDate ? new Date(processDate) : null,
+      state: state || null,
+      empName: empName || null,
+      machineName: machineName || null,
+      workCenterNo: workCenterNo || null,
+      remarks: remarks || null,
+      notApplicable: !!notApplicable
+    });
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    throw err;
+  }
+};
+

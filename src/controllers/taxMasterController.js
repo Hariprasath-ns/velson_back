@@ -1,12 +1,14 @@
 import * as TaxMasterModel from "../models/taxMasterModel.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 export const getAll = async (req, res) => {
   try {
     const data = await TaxMasterModel.getAllTaxMasters(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error("[taxMaster] getAll error:", err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -14,10 +16,10 @@ export const getOne = async (req, res) => {
   try {
     const id = Number(req.params.id);
     const data = await TaxMasterModel.getTaxMasterById(req.db, id);
-    if (!data) return res.status(404).json({ success: false, message: "Not found" });
+    if (!data) throw new NotFoundError("Not found");
     res.json({ success: true, data });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    throw err;
   }
 };
 
@@ -38,7 +40,7 @@ export const create = async (req, res) => {
     } = req.body;
 
     if (!taxLedgerId)
-      return res.status(400).json({ success: false, message: "taxLedgerId is required" });
+      throw new BadRequestError("taxLedgerId is required");
 
     const data = await TaxMasterModel.createTaxMaster(req.db, {
       taxLedgerId:     Number(taxLedgerId),
@@ -56,10 +58,10 @@ export const create = async (req, res) => {
 
     res.status(201).json({ success: true, data });
   } catch (err) {
-    console.error("[taxMaster] create error:", err);
+    
     if (err.code === "P2003")
-      return res.status(400).json({ success: false, message: "Invalid taxLedgerId" });
-    res.status(500).json({ success: false, message: err.message });
+      throw new BadRequestError("Invalid taxLedgerId");
+    throw err;
   }
 };
 
@@ -81,7 +83,7 @@ export const update = async (req, res) => {
     } = req.body;
 
     if (!taxLedgerId)
-      return res.status(400).json({ success: false, message: "taxLedgerId is required" });
+      throw new BadRequestError("taxLedgerId is required");
 
     const data = await TaxMasterModel.updateTaxMaster(req.db, id, {
       taxLedgerId:     Number(taxLedgerId),
@@ -100,10 +102,10 @@ export const update = async (req, res) => {
     res.json({ success: true, data });
   } catch (err) {
     if (err.code === "P2025")
-      return res.status(404).json({ success: false, message: "Record not found" });
+      throw new NotFoundError("Record not found");
     if (err.code === "P2003")
-      return res.status(400).json({ success: false, message: "Invalid taxLedgerId" });
-    res.status(500).json({ success: false, message: err.message });
+      throw new BadRequestError("Invalid taxLedgerId");
+    throw err;
   }
 };
 
@@ -114,7 +116,7 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === "P2025")
-      return res.status(404).json({ success: false, message: "Record not found" });
-    res.status(500).json({ success: false, message: err.message });
+      throw new NotFoundError("Record not found");
+    throw err;
   }
 };

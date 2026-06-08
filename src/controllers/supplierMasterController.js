@@ -1,12 +1,14 @@
 import * as SupplierModel from '../models/supplierMasterModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 export const getAll = async (req, res) => {
   try {
     const data = await SupplierModel.getAllSuppliers(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[supplierMaster] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -15,8 +17,8 @@ export const getNextCode = async (req, res) => {
     const nextSCode = await SupplierModel.getNextSCode(req.db);
     res.json({ success: true, nextSCode });
   } catch (err) {
-    console.error('[supplierMaster] getNextCode error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -30,7 +32,7 @@ export const create = async (req, res) => {
     } = req.body;
 
     if (!supplierName || !supplierName.trim()) {
-      return res.status(400).json({ success: false, message: 'supplierName is required' });
+      throw new BadRequestError('supplierName is required');
     }
 
     const resolvedSCode = sCode && sCode.trim()
@@ -70,10 +72,10 @@ export const create = async (req, res) => {
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Supplier code already exists' });
+      throw new ConflictError('Supplier code already exists');
     }
-    console.error('[supplierMaster] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -88,7 +90,7 @@ export const update = async (req, res) => {
     } = req.body;
 
     if (!supplierName || !supplierName.trim()) {
-      return res.status(400).json({ success: false, message: 'supplierName is required' });
+      throw new BadRequestError('supplierName is required');
     }
 
     const record = await SupplierModel.updateSupplier(req.db, id, {
@@ -123,13 +125,13 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Supplier not found' });
+      throw new NotFoundError('Supplier not found');
     }
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Supplier code already exists' });
+      throw new ConflictError('Supplier code already exists');
     }
-    console.error('[supplierMaster] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -140,9 +142,9 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Supplier not found' });
+      throw new NotFoundError('Supplier not found');
     }
-    console.error('[supplierMaster] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

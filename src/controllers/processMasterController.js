@@ -1,4 +1,6 @@
 import * as ProcessModel from '../models/processMasterModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 export const mapToFrontend = (r) => ({
   id: r.id,
@@ -43,8 +45,8 @@ export const getAll = async (req, res) => {
     const data = rawData.map(mapToFrontend);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[processMaster] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -52,10 +54,10 @@ export const create = async (req, res) => {
   try {
     const { PM_Part_Name, PM_Process_Name } = req.body;
     if (!PM_Part_Name || !PM_Part_Name.trim()) {
-      return res.status(400).json({ success: false, message: 'PM_Part_Name is required' });
+      throw new BadRequestError('PM_Part_Name is required');
     }
     if (!PM_Process_Name || !PM_Process_Name.trim()) {
-      return res.status(400).json({ success: false, message: 'PM_Process_Name is required' });
+      throw new BadRequestError('PM_Process_Name is required');
     }
 
     const dbData = mapToDb(req.body);
@@ -65,8 +67,8 @@ export const create = async (req, res) => {
     const record = await ProcessModel.createProcess(req.db, dbData);
     res.status(201).json({ success: true, data: mapToFrontend(record) });
   } catch (err) {
-    console.error('[processMaster] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -75,10 +77,10 @@ export const update = async (req, res) => {
     const id = parseInt(req.params.id, 10);
     const { PM_Part_Name, PM_Process_Name } = req.body;
     if (!PM_Part_Name || !PM_Part_Name.trim()) {
-      return res.status(400).json({ success: false, message: 'PM_Part_Name is required' });
+      throw new BadRequestError('PM_Part_Name is required');
     }
     if (!PM_Process_Name || !PM_Process_Name.trim()) {
-      return res.status(400).json({ success: false, message: 'PM_Process_Name is required' });
+      throw new BadRequestError('PM_Process_Name is required');
     }
 
     const dbData = mapToDb(req.body);
@@ -88,10 +90,10 @@ export const update = async (req, res) => {
     res.json({ success: true, data: mapToFrontend(record) });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Process not found' });
+      throw new NotFoundError('Process not found');
     }
-    console.error('[processMaster] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -102,10 +104,10 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Process not found' });
+      throw new NotFoundError('Process not found');
     }
-    console.error('[processMaster] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -114,7 +116,7 @@ export const removeAll = async (req, res) => {
     await ProcessModel.deleteAllProcesses(req.db);
     res.json({ success: true, message: 'All processes deleted successfully' });
   } catch (err) {
-    console.error('[processMaster] removeAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

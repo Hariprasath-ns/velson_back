@@ -1,4 +1,6 @@
 import * as GateModel from '../models/gateMasterModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 const toFloat = (v) => (v !== '' && v != null ? parseFloat(v) || 0 : 0);
 
@@ -20,8 +22,8 @@ export const getNextNo = async (req, res) => {
     const result = await GateModel.getNextGateNo(req.db);
     res.json({ success: true, ...result });
   } catch (err) {
-    console.error('[gateMaster] getNextNo error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -30,8 +32,8 @@ export const getAll = async (req, res) => {
     const data = await GateModel.getAllGateEntries(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[gateMaster] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -39,11 +41,11 @@ export const getOne = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const data = await GateModel.getGateEntryById(req.db, id);
-    if (!data) return res.status(404).json({ success: false, message: 'Gate entry not found' });
+    if (!data) throw new NotFoundError('Gate entry not found');
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[gateMaster] getOne error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -57,7 +59,7 @@ export const create = async (req, res) => {
     } = req.body;
 
     if (!gateEntryNo) {
-      return res.status(400).json({ success: false, message: 'gateEntryNo is required' });
+      throw new BadRequestError('gateEntryNo is required');
     }
 
     const headerData = {
@@ -84,10 +86,10 @@ export const create = async (req, res) => {
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Gate entry number already exists' });
+      throw new ConflictError('Gate entry number already exists');
     }
-    console.error('[gateMaster] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -121,10 +123,10 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Gate entry not found' });
+      throw new NotFoundError('Gate entry not found');
     }
-    console.error('[gateMaster] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -135,9 +137,9 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Gate entry not found' });
+      throw new NotFoundError('Gate entry not found');
     }
-    console.error('[gateMaster] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

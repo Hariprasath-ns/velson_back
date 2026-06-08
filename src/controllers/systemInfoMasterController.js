@@ -1,4 +1,6 @@
 import * as Model from '../models/systemInfoMasterModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 const build = (body) => ({
   dept:         body.dept?.trim()         || '',
@@ -17,7 +19,7 @@ export const getAll = async (req, res) => {
     const data = await Model.getAll(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    throw err;
   }
 };
 
@@ -25,19 +27,19 @@ export const getById = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const record = await Model.getById(req.db, id);
-    if (!record) return res.status(404).json({ success: false, message: 'Record not found' });
+    if (!record) throw new NotFoundError('Record not found');
     res.json({ success: true, data: record });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    throw err;
   }
 };
 
 export const create = async (req, res) => {
   try {
     if (!req.body.dept?.trim())
-      return res.status(400).json({ success: false, message: 'dept is required' });
+      throw new BadRequestError('dept is required');
     if (!req.body.userName?.trim())
-      return res.status(400).json({ success: false, message: 'userName is required' });
+      throw new BadRequestError('userName is required');
 
     const data = build(req.body);
     data.createdBy = req.body.createdBy || 'Admin';
@@ -46,8 +48,8 @@ export const create = async (req, res) => {
     const record = await Model.create(req.db, data);
     res.status(201).json({ success: true, data: record });
   } catch (err) {
-    console.error('[systemInfoMaster] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -55,9 +57,9 @@ export const update = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (!req.body.dept?.trim())
-      return res.status(400).json({ success: false, message: 'dept is required' });
+      throw new BadRequestError('dept is required');
     if (!req.body.userName?.trim())
-      return res.status(400).json({ success: false, message: 'userName is required' });
+      throw new BadRequestError('userName is required');
 
     const data = build(req.body);
     data.updatedBy = req.body.updatedBy || 'Admin';
@@ -66,9 +68,9 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025')
-      return res.status(404).json({ success: false, message: 'Record not found' });
-    console.error('[systemInfoMaster] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+      throw new NotFoundError('Record not found');
+    
+    throw err;
   }
 };
 
@@ -79,8 +81,8 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025')
-      return res.status(404).json({ success: false, message: 'Record not found' });
-    console.error('[systemInfoMaster] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+      throw new NotFoundError('Record not found');
+    
+    throw err;
   }
 };

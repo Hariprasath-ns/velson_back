@@ -1,4 +1,6 @@
 import * as PartUsageListModel from '../models/partUsageListModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 const buildData = (body) => ({
   partNo:       body.partNo?.trim(),
@@ -17,8 +19,8 @@ export const getAll = async (req, res) => {
     const data = await PartUsageListModel.getPartUsageLists(req.db, { search });
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[partUsageList] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -26,11 +28,11 @@ export const getOne = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const data = await PartUsageListModel.getPartUsageListById(req.db, id);
-    if (!data) return res.status(404).json({ success: false, message: 'Record not found' });
+    if (!data) throw new NotFoundError('Record not found');
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[partUsageList] getOne error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -38,13 +40,13 @@ export const create = async (req, res) => {
   try {
     const { partNo, partName } = req.body;
     if (!partNo || !partName) {
-      return res.status(400).json({ success: false, message: 'partNo and partName are required' });
+      throw new BadRequestError('partNo and partName are required');
     }
     const record = await PartUsageListModel.createPartUsageList(req.db, buildData(req.body));
     res.status(201).json({ success: true, data: record });
   } catch (err) {
-    console.error('[partUsageList] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -53,7 +55,7 @@ export const update = async (req, res) => {
     const id = parseInt(req.params.id, 10);
     const { partNo, partName } = req.body;
     if (!partNo || !partName) {
-      return res.status(400).json({ success: false, message: 'partNo and partName are required' });
+      throw new BadRequestError('partNo and partName are required');
     }
     const data = buildData(req.body);
     delete data.createdBy;
@@ -61,10 +63,10 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Record not found' });
+      throw new NotFoundError('Record not found');
     }
-    console.error('[partUsageList] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -75,9 +77,9 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Record not found' });
+      throw new NotFoundError('Record not found');
     }
-    console.error('[partUsageList] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

@@ -7,6 +7,9 @@ import morgan from "morgan";
 
 import { checkConnections } from "./config/db.js";
 import { authenticate } from "./middelwares/auth.js";
+import { requestIdMiddleware, logger } from "./utils/logger.js";
+import { notFoundMiddleware } from "./middelwares/notFoundMiddleware.js";
+import { errorMiddleware } from "./middelwares/errorMiddleware.js";
 
 import authRoute from "./routes/authRoute.js";
 import userRoute from "./routes/userRoute.js";
@@ -42,12 +45,15 @@ import systemInfoMasterRoute from "./routes/systemInfoMasterRoute.js";
 import bomCreationRoute from "./routes/bomCreationRoute.js";
 import jobCardRoute from "./routes/jobCardRoute.js";
 import processMasterRoute from "./routes/processMasterRoute.js";
+import customerComplaintRoute from "./routes/customerComplaintRoute.js";
+
 
 
 dotenv.config();
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+app.use(requestIdMiddleware);
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(cors());
@@ -91,13 +97,46 @@ app.use("/api", systemInfoMasterRoute);
 app.use("/api", bomCreationRoute);
 app.use("/api", jobCardRoute);
 app.use("/api", processMasterRoute);
+app.use("/api", customerComplaintRoute);
+
+
+// 404 handler for unmatched routes
+app.use(notFoundMiddleware);
+
+// Centralized global error handling middleware (must be registered last)
+app.use(errorMiddleware);
 
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
+const server = app.listen(PORT, async () => {
+  logger.info(`Server running on port ${PORT}`);
   await checkConnections();
 });
-// Nodemon reload trigger
+
+// Process-level unhandled exception and rejection handlers
+const gracefulShutdown = (signal, code = 0) => {
+  logger.info(`Received ${signal}. Starting graceful shutdown...`);
+  server.close(() => {
+    logger.info("HTTP server closed.");
+    process.exit(code);
+  });
+
+  // Timeout backup shutdown
+  setTimeout(() => {
+    logger.error("Could not close connections in time, forcefully shutting down", new Error("Graceful shutdown timeout"));
+    process.exit(code);
+  }, 10000);
+};
+
+process.on("unhandledRejection", (reason, promise) => {
+  logger.error("Unhandled Rejection detected at Promise", reason instanceof Error ? reason : new Error(String(reason)));
+  gracefulShutdown("unhandledRejection", 1);
+});
+
+process.on("uncaughtException", (error) => {
+  logger.error("Uncaught Exception detected", error);
+  gracefulShutdown("uncaughtException", 1);
+});
+
 

@@ -1,12 +1,14 @@
 import * as Model from '../models/serviceDetailModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 export const getAll = async (req, res) => {
   try {
     const data = await Model.getAll(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[serviceDetail] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -31,7 +33,7 @@ export const create = async (req, res) => {
     } = req.body;
 
     if (!serviceJobNo || !vehicleModelNo || !modelSubType || !vehicleName) {
-      return res.status(400).json({ success: false, message: 'Required fields are missing' });
+      throw new BadRequestError('Required fields are missing');
     }
 
     const record = await Model.create(req.db, {
@@ -53,8 +55,8 @@ export const create = async (req, res) => {
     });
     res.status(201).json({ success: true, data: record });
   } catch (err) {
-    console.error('[serviceDetail] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -99,10 +101,10 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Record not found' });
+      throw new NotFoundError('Record not found');
     }
-    console.error('[serviceDetail] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -113,9 +115,9 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Record not found' });
+      throw new NotFoundError('Record not found');
     }
-    console.error('[serviceDetail] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

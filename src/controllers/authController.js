@@ -1,11 +1,13 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
+      throw new BadRequestError("Email and password are required");
     }
 
     const credential = await req.db.userCredential.findUnique({
@@ -14,21 +16,21 @@ export const login = async (req, res) => {
     });
 
     if (!credential) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      throw new UnauthorizedError("Invalid credentials");
     }
 
     if (!credential.isActive) {
-      return res.status(403).json({ error: "Account is deactivated" });
+      throw new ForbiddenError("Account is deactivated");
     }
 
     const isMatch = await bcrypt.compare(password, credential.password);
     if (!isMatch) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      throw new UnauthorizedError("Invalid credentials");
     }
 
     const token = jwt.sign(
       { id: credential.user.id, email: credential.user.email, role: credential.role },
-      process.env.JWT_SECRET || "fallback_secret",
+      process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
@@ -42,6 +44,6 @@ export const login = async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    throw err;
   }
 };

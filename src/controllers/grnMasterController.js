@@ -1,4 +1,6 @@
 import * as GRNModel from '../models/grnMasterModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 const toFloat = (v) => (v !== '' && v != null ? parseFloat(v) || 0 : 0);
 
@@ -27,8 +29,8 @@ export const getNextNo = async (req, res) => {
     const result = await GRNModel.getNextGRNNo(req.db);
     res.json({ success: true, ...result });
   } catch (err) {
-    console.error('[grnMaster] getNextNo error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -37,8 +39,8 @@ export const getAll = async (req, res) => {
     const data = await GRNModel.getAllGRNEntries(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[grnMaster] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -46,11 +48,11 @@ export const getOne = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const data = await GRNModel.getGRNEntryById(req.db, id);
-    if (!data) return res.status(404).json({ success: false, message: 'GRN entry not found' });
+    if (!data) throw new NotFoundError('GRN entry not found');
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[grnMaster] getOne error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -67,7 +69,7 @@ export const create = async (req, res) => {
     } = req.body;
 
     if (!grnNo) {
-      return res.status(400).json({ success: false, message: 'grnNo is required' });
+      throw new BadRequestError('grnNo is required');
     }
 
     const headerData = {
@@ -107,10 +109,10 @@ export const create = async (req, res) => {
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'GRN number already exists' });
+      throw new ConflictError('GRN number already exists');
     }
-    console.error('[grnMaster] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -161,10 +163,10 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'GRN entry not found' });
+      throw new NotFoundError('GRN entry not found');
     }
-    console.error('[grnMaster] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -175,9 +177,9 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'GRN entry not found' });
+      throw new NotFoundError('GRN entry not found');
     }
-    console.error('[grnMaster] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

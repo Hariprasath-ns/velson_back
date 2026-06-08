@@ -1,4 +1,6 @@
 import * as MachineModel from '../models/machineMasterModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 const toDate = (v) => (v ? new Date(v) : null);
 
@@ -7,8 +9,8 @@ export const getAll = async (req, res) => {
     const data = await MachineModel.getAllMachines(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[machineMaster] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -17,8 +19,8 @@ export const getNextCode = async (req, res) => {
     const nextCode = await MachineModel.getNextMachineCode(req.db);
     res.json({ success: true, nextCode });
   } catch (err) {
-    console.error('[machineMaster] getNextCode error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -33,7 +35,7 @@ export const create = async (req, res) => {
     } = req.body;
 
     if (!machineName || !machineName.trim()) {
-      return res.status(400).json({ success: false, message: 'machineName is required' });
+      throw new BadRequestError('machineName is required');
     }
 
     const resolvedCode = machineCode && machineCode.trim()
@@ -67,10 +69,10 @@ export const create = async (req, res) => {
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Machine code already exists' });
+      throw new ConflictError('Machine code already exists');
     }
-    console.error('[machineMaster] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -86,7 +88,7 @@ export const update = async (req, res) => {
     } = req.body;
 
     if (!machineName || !machineName.trim()) {
-      return res.status(400).json({ success: false, message: 'machineName is required' });
+      throw new BadRequestError('machineName is required');
     }
 
     const record = await MachineModel.updateMachine(req.db, id, {
@@ -114,10 +116,10 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Machine not found' });
+      throw new NotFoundError('Machine not found');
     }
-    console.error('[machineMaster] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -128,9 +130,9 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Machine not found' });
+      throw new NotFoundError('Machine not found');
     }
-    console.error('[machineMaster] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

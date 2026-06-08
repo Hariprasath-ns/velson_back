@@ -1,12 +1,14 @@
 import * as BomModel from '../models/bomCreationModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 export const getAll = async (req, res) => {
   try {
     const data = await BomModel.getAllBomCreations(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[bomCreation] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -20,10 +22,10 @@ export const create = async (req, res) => {
     } = req.body;
 
     if (!customerName || !String(customerName).trim()) {
-      return res.status(400).json({ success: false, message: 'customerName is required' });
+      throw new BadRequestError('customerName is required');
     }
     if (!serviceJobNo || !String(serviceJobNo).trim()) {
-      return res.status(400).json({ success: false, message: 'serviceJobNo is required' });
+      throw new BadRequestError('serviceJobNo is required');
     }
 
     const record = await BomModel.createBomCreation(req.db, {
@@ -48,10 +50,10 @@ export const create = async (req, res) => {
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(400).json({ success: false, message: 'BOM No already exists' });
+      throw new BadRequestError('BOM No already exists');
     }
-    console.error('[bomCreation] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -66,7 +68,7 @@ export const update = async (req, res) => {
     } = req.body;
 
     if (!customerName || !String(customerName).trim()) {
-      return res.status(400).json({ success: false, message: 'customerName is required' });
+      throw new BadRequestError('customerName is required');
     }
 
     const record = await BomModel.updateBomCreation(req.db, id, {
@@ -90,10 +92,10 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'BOM record not found' });
+      throw new NotFoundError('BOM record not found');
     }
-    console.error('[bomCreation] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -104,9 +106,9 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'BOM record not found' });
+      throw new NotFoundError('BOM record not found');
     }
-    console.error('[bomCreation] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

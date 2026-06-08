@@ -1,12 +1,14 @@
 import * as VehicleModel from '../models/vehicleMasterModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 export const getAll = async (req, res) => {
   try {
     const data = await VehicleModel.getAllVehicles(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[vehicleMaster] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -19,13 +21,13 @@ export const create = async (req, res) => {
     } = req.body;
 
     if (!customerId) {
-      return res.status(400).json({ success: false, message: 'customerId is required' });
+      throw new BadRequestError('customerId is required');
     }
     if (!modelName || !String(modelName).trim()) {
-      return res.status(400).json({ success: false, message: 'modelName is required' });
+      throw new BadRequestError('modelName is required');
     }
     if (!vehicleName || !String(vehicleName).trim()) {
-      return res.status(400).json({ success: false, message: 'vehicleName is required' });
+      throw new BadRequestError('vehicleName is required');
     }
 
     const record = await VehicleModel.createVehicle(req.db, {
@@ -48,10 +50,10 @@ export const create = async (req, res) => {
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2003') {
-      return res.status(400).json({ success: false, message: 'Referenced customer does not exist' });
+      throw new BadRequestError('Referenced customer does not exist');
     }
-    console.error('[vehicleMaster] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -65,13 +67,13 @@ export const update = async (req, res) => {
     } = req.body;
 
     if (!customerId) {
-      return res.status(400).json({ success: false, message: 'customerId is required' });
+      throw new BadRequestError('customerId is required');
     }
     if (!modelName || !String(modelName).trim()) {
-      return res.status(400).json({ success: false, message: 'modelName is required' });
+      throw new BadRequestError('modelName is required');
     }
     if (!vehicleName || !String(vehicleName).trim()) {
-      return res.status(400).json({ success: false, message: 'vehicleName is required' });
+      throw new BadRequestError('vehicleName is required');
     }
 
     const record = await VehicleModel.updateVehicle(req.db, id, {
@@ -93,13 +95,13 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Vehicle record not found' });
+      throw new NotFoundError('Vehicle record not found');
     }
     if (err.code === 'P2003') {
-      return res.status(400).json({ success: false, message: 'Referenced customer does not exist' });
+      throw new BadRequestError('Referenced customer does not exist');
     }
-    console.error('[vehicleMaster] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -110,9 +112,9 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Vehicle record not found' });
+      throw new NotFoundError('Vehicle record not found');
     }
-    console.error('[vehicleMaster] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

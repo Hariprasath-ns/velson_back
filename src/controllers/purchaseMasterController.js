@@ -1,12 +1,14 @@
 import * as POModel from '../models/purchaseMasterModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 export const getDistinctValues = async (req, res) => {
   try {
     const data = await POModel.getDistinctPOFieldValues(req.db)
     res.json({ success: true, data })
   } catch (err) {
-    console.error('[purchaseMaster] getDistinctValues error:', err)
-    res.status(500).json({ success: false, message: err.message })
+    
+    throw err;
   }
 };
 
@@ -37,8 +39,8 @@ export const getNextNo = async (req, res) => {
     const result = await POModel.getNextPoNo(req.db);
     res.json({ success: true, ...result });
   } catch (err) {
-    console.error('[purchaseMaster] getNextNo error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -47,8 +49,8 @@ export const getAll = async (req, res) => {
     const data = await POModel.getAllPurchaseOrders(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[purchaseMaster] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -56,11 +58,11 @@ export const getOne = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const data = await POModel.getPurchaseOrderById(req.db, id);
-    if (!data) return res.status(404).json({ success: false, message: 'Purchase order not found' });
+    if (!data) throw new NotFoundError('Purchase order not found');
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[purchaseMaster] getOne error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -78,7 +80,7 @@ export const create = async (req, res) => {
     } = req.body;
 
     if (!poNo) {
-      return res.status(400).json({ success: false, message: 'poNo is required' });
+      throw new BadRequestError('poNo is required');
     }
 
     let finalSupplierRefNo = supplierRefNo || null;
@@ -149,13 +151,13 @@ export const create = async (req, res) => {
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Purchase order number already exists' });
+      throw new ConflictError('Purchase order number already exists');
     }
     if (err.code === 'P2003') {
-      return res.status(400).json({ success: false, message: 'Invalid supplier reference' });
+      throw new BadRequestError('Invalid supplier reference');
     }
-    console.error('[purchaseMaster] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -238,10 +240,10 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Purchase order not found' });
+      throw new NotFoundError('Purchase order not found');
     }
-    console.error('[purchaseMaster] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -252,9 +254,9 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Purchase order not found' });
+      throw new NotFoundError('Purchase order not found');
     }
-    console.error('[purchaseMaster] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

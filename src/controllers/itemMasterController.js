@@ -2,6 +2,8 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import multer from 'multer';
 import * as ItemMasterModel from '../models/itemMasterModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 const storage = multer.memoryStorage();
 
@@ -76,8 +78,8 @@ export const getAll = async (req, res) => {
     const result = await ItemMasterModel.getItemMasters(req.db, { page, limit, search });
     res.json({ success: true, ...result });
   } catch (err) {
-    console.error('[itemMaster] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -85,11 +87,11 @@ export const getOne = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const data = await ItemMasterModel.getItemMasterById(req.db, id);
-    if (!data) return res.status(404).json({ success: false, message: 'Item not found' });
+    if (!data) throw new NotFoundError('Item not found');
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[itemMaster] getOne error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -97,16 +99,16 @@ export const create = async (req, res) => {
   try {
     const { partNo, partName } = req.body;
     if (!partNo || !partName) {
-      return res.status(400).json({ success: false, message: 'partNo and partName are required' });
+      throw new BadRequestError('partNo and partName are required');
     }
     const record = await ItemMasterModel.createItemMaster(req.db, buildData(req.body, false));
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(400).json({ success: false, message: 'Part number already exists' });
+      throw new BadRequestError('Part number already exists');
     }
-    console.error('[itemMaster] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -115,20 +117,20 @@ export const update = async (req, res) => {
     const id = parseInt(req.params.id, 10);
     const { partNo, partName } = req.body;
     if (!partNo || !partName) {
-      return res.status(400).json({ success: false, message: 'partNo and partName are required' });
+      throw new BadRequestError('partNo and partName are required');
     }
     const data = buildData(req.body, true);
     const record = await ItemMasterModel.updateItemMaster(req.db, id, data);
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Item not found' });
+      throw new NotFoundError('Item not found');
     }
     if (err.code === 'P2002') {
-      return res.status(400).json({ success: false, message: 'Part number already exists' });
+      throw new BadRequestError('Part number already exists');
     }
-    console.error('[itemMaster] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -139,10 +141,10 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Item not found' });
+      throw new NotFoundError('Item not found');
     }
-    console.error('[itemMaster] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -163,7 +165,7 @@ export const uploadFiles = async (req, res) => {
     }
 
     if (!req.files?.image?.[0] && !req.files?.pdf?.[0]) {
-      return res.status(400).json({ success: false, message: 'No files uploaded' });
+      throw new BadRequestError('No files uploaded');
     }
 
     await ItemMasterModel.updateItemMaster(req.db, id, updateData);
@@ -178,8 +180,8 @@ export const uploadFiles = async (req, res) => {
     });
     res.json({ success: true, data: record });
   } catch (err) {
-    console.error('[itemMaster] uploadFiles error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -189,8 +191,8 @@ export const getUploads = async (req, res) => {
     const data = await ItemMasterModel.getUploadsByItemId(req.db, id);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[itemMaster] getUploads error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -200,15 +202,15 @@ export const downloadImage = async (req, res) => {
     const item = await ItemMasterModel.getItemMasterById(req.db, id);
 
     if (!item || !item.imageData) {
-      return res.status(404).json({ success: false, message: 'Image not found' });
+      throw new NotFoundError('Image not found');
     }
 
     res.set('Content-Type', item.imageMimeType || 'image/jpeg');
     res.set('Content-Disposition', `inline; filename="item_${id}_image"`);
     res.send(item.imageData);
   } catch (err) {
-    console.error('[itemMaster] downloadImage error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -218,15 +220,15 @@ export const downloadPdf = async (req, res) => {
     const item = await ItemMasterModel.getItemMasterById(req.db, id);
 
     if (!item || !item.pdfData) {
-      return res.status(404).json({ success: false, message: 'PDF not found' });
+      throw new NotFoundError('PDF not found');
     }
 
     res.set('Content-Type', item.pdfMimeType || 'application/pdf');
     res.set('Content-Disposition', `inline; filename="item_${id}_document.pdf"`);
     res.send(item.pdfData);
   } catch (err) {
-    console.error('[itemMaster] downloadPdf error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -236,15 +238,15 @@ export const downloadUploadImage = async (req, res) => {
     const item = await ItemMasterModel.getUploadById(req.db, id);
 
     if (!item || !item.imageData) {
-      return res.status(404).json({ success: false, message: 'Image not found' });
+      throw new NotFoundError('Image not found');
     }
 
     res.set('Content-Type', item.imageMimeType || 'image/jpeg');
     res.set('Content-Disposition', `inline; filename="upload_${id}_image"`);
     res.send(item.imageData);
   } catch (err) {
-    console.error('[itemMaster] downloadUploadImage error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -254,14 +256,14 @@ export const downloadUploadPdf = async (req, res) => {
     const item = await ItemMasterModel.getUploadById(req.db, id);
 
     if (!item || !item.pdfData) {
-      return res.status(404).json({ success: false, message: 'PDF not found' });
+      throw new NotFoundError('PDF not found');
     }
 
     res.set('Content-Type', item.pdfMimeType || 'application/pdf');
     res.set('Content-Disposition', `inline; filename="upload_${id}_document.pdf"`);
     res.send(item.pdfData);
   } catch (err) {
-    console.error('[itemMaster] downloadUploadPdf error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

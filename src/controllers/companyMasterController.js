@@ -2,6 +2,8 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import multer from 'multer';
 import * as CompanyModel from '../models/companyMasterModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 const storage = multer.memoryStorage();
 
@@ -66,8 +68,8 @@ export const getAll = async (req, res) => {
     const data = await CompanyModel.getAllCompanies(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[companyMaster] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -76,8 +78,8 @@ export const getNextCode = async (req, res) => {
     const nextCode = await CompanyModel.getNextCompanyCode(req.db);
     res.json({ success: true, nextCode });
   } catch (err) {
-    console.error('[companyMaster] getNextCode error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -85,18 +87,18 @@ export const getById = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const record = await CompanyModel.getCompanyById(req.db, id);
-    if (!record) return res.status(404).json({ success: false, message: 'Company not found' });
+    if (!record) throw new NotFoundError('Company not found');
     res.json({ success: true, data: record });
   } catch (err) {
-    console.error('[companyMaster] getById error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
 export const create = async (req, res) => {
   try {
     if (!req.body.companyName?.trim()) {
-      return res.status(400).json({ success: false, message: 'companyName is required' });
+      throw new BadRequestError('companyName is required');
     }
 
     const resolvedCode = req.body.companyCode?.trim()
@@ -117,10 +119,10 @@ export const create = async (req, res) => {
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Company code already exists' });
+      throw new ConflictError('Company code already exists');
     }
-    console.error('[companyMaster] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -128,7 +130,7 @@ export const update = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (!req.body.companyName?.trim()) {
-      return res.status(400).json({ success: false, message: 'companyName is required' });
+      throw new BadRequestError('companyName is required');
     }
 
     const data = buildData(req.body);
@@ -142,13 +144,13 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Company not found' });
+      throw new NotFoundError('Company not found');
     }
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Company code already exists' });
+      throw new ConflictError('Company code already exists');
     }
-    console.error('[companyMaster] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -159,10 +161,10 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Company not found' });
+      throw new NotFoundError('Company not found');
     }
-    console.error('[companyMaster] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -172,14 +174,14 @@ export const downloadLogo = async (req, res) => {
     const company = await CompanyModel.getCompanyById(req.db, id);
     
     if (!company || !company.logoData) {
-      return res.status(404).json({ success: false, message: 'Logo not found' });
+      throw new NotFoundError('Logo not found');
     }
 
     res.set('Content-Type', company.logoMimeType || 'image/png');
     res.set('Content-Disposition', `inline; filename="company_${id}_logo"`);
     res.send(company.logoData);
   } catch (err) {
-    console.error('[companyMaster] downloadLogo error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

@@ -1,5 +1,7 @@
 import * as CustomerModel from '../models/customerMasterModel.js';
 import multer from 'multer';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 const storage = multer.memoryStorage();
 
@@ -18,8 +20,8 @@ export const getAll = async (req, res) => {
     const data = await CustomerModel.getAllCustomers(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[customerMaster] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -28,8 +30,8 @@ export const getNextCode = async (req, res) => {
     const nextCCode = await CustomerModel.getNextCCode(req.db);
     res.json({ success: true, nextCCode });
   } catch (err) {
-    console.error('[customerMaster] getNextCode error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -43,7 +45,7 @@ export const create = async (req, res) => {
     } = req.body;
 
     if (!customerName || !customerName.trim()) {
-      return res.status(400).json({ success: false, message: 'customerName is required' });
+      throw new BadRequestError('customerName is required');
     }
 
     const resolvedCCode = cCode && cCode.trim()
@@ -85,10 +87,10 @@ export const create = async (req, res) => {
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Customer code already exists' });
+      throw new ConflictError('Customer code already exists');
     }
-    console.error('[customerMaster] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -103,7 +105,7 @@ export const update = async (req, res) => {
     } = req.body;
 
     if (!customerName || !customerName.trim()) {
-      return res.status(400).json({ success: false, message: 'customerName is required' });
+      throw new BadRequestError('customerName is required');
     }
 
     const record = await CustomerModel.updateCustomer(req.db, id, {
@@ -140,13 +142,13 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Customer not found' });
+      throw new NotFoundError('Customer not found');
     }
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Customer code already exists' });
+      throw new ConflictError('Customer code already exists');
     }
-    console.error('[customerMaster] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -157,10 +159,10 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Customer not found' });
+      throw new NotFoundError('Customer not found');
     }
-    console.error('[customerMaster] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -180,14 +182,14 @@ export const uploadFiles = async (req, res) => {
     }
 
     if (!req.files?.image?.[0] && !req.files?.pdf?.[0]) {
-      return res.status(400).json({ success: false, message: 'No files uploaded' });
+      throw new BadRequestError('No files uploaded');
     }
 
     const record = await CustomerModel.updateCustomer(req.db, id, updateData);
     res.json({ success: true, data: record });
   } catch (err) {
-    console.error('[customerMaster] uploadFiles error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -197,15 +199,15 @@ export const downloadImage = async (req, res) => {
     const item = await CustomerModel.getCustomerById(req.db, id);
     
     if (!item || !item.imageData) {
-      return res.status(404).json({ success: false, message: 'Image not found' });
+      throw new NotFoundError('Image not found');
     }
 
     res.set('Content-Type', item.imageMimeType || 'image/jpeg');
     res.set('Content-Disposition', `inline; filename="customer_${id}_image"`);
     res.send(item.imageData);
   } catch (err) {
-    console.error('[customerMaster] downloadImage error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -215,14 +217,14 @@ export const downloadPdf = async (req, res) => {
     const item = await CustomerModel.getCustomerById(req.db, id);
     
     if (!item || !item.pdfData) {
-      return res.status(404).json({ success: false, message: 'PDF not found' });
+      throw new NotFoundError('PDF not found');
     }
 
     res.set('Content-Type', item.pdfMimeType || 'application/pdf');
     res.set('Content-Disposition', `inline; filename="customer_${id}_document.pdf"`);
     res.send(item.pdfData);
   } catch (err) {
-    console.error('[customerMaster] downloadPdf error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

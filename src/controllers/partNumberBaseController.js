@@ -1,12 +1,14 @@
 import * as PNBModel from '../models/partNumberBaseModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 export const getAll = async (req, res) => {
   try {
     const data = await PNBModel.getAllPartNumberBases(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[partNumberBase] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -14,19 +16,19 @@ export const create = async (req, res) => {
   try {
     const { categoryId, subCategoryId, prefixCode, digitCount, startingNumber, endingNumber, isActive } = req.body;
 
-    if (!categoryId)    return res.status(400).json({ success: false, message: 'categoryId is required' });
-    if (!subCategoryId) return res.status(400).json({ success: false, message: 'subCategoryId is required' });
-    if (!prefixCode?.trim()) return res.status(400).json({ success: false, message: 'prefixCode is required' });
+    if (!categoryId)    throw new BadRequestError('categoryId is required');
+    if (!subCategoryId) throw new BadRequestError('subCategoryId is required');
+    if (!prefixCode?.trim()) throw new BadRequestError('prefixCode is required');
     if (!digitCount || Number(digitCount) < 1)
-      return res.status(400).json({ success: false, message: 'digitCount must be a positive number' });
+      throw new BadRequestError('digitCount must be a positive number');
 
     const start = Number(startingNumber);
     const end   = Number(endingNumber);
     if (isNaN(start) || isNaN(end)) {
-      return res.status(400).json({ success: false, message: 'startingNumber and endingNumber must be numbers' });
+      throw new BadRequestError('startingNumber and endingNumber must be numbers');
     }
     if (end <= start) {
-      return res.status(400).json({ success: false, message: 'endingNumber must be greater than startingNumber' });
+      throw new BadRequestError('endingNumber must be greater than startingNumber');
     }
 
     const totalNumbers = end - start;
@@ -43,11 +45,11 @@ export const create = async (req, res) => {
     });
     res.status(201).json({ success: true, data: record });
   } catch (err) {
-    console.error('[partNumberBase] create error:', err);
+    
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Duplicate entry — prefix or subcategory already configured' });
+      throw new ConflictError('Duplicate entry — prefix or subcategory already configured');
     }
-    res.status(500).json({ success: false, message: err.message });
+    throw err;
   }
 };
 
@@ -56,19 +58,19 @@ export const update = async (req, res) => {
     const id = parseInt(req.params.id);
     const { categoryId, subCategoryId, prefixCode, digitCount, startingNumber, endingNumber, isActive } = req.body;
 
-    if (!categoryId)    return res.status(400).json({ success: false, message: 'categoryId is required' });
-    if (!subCategoryId) return res.status(400).json({ success: false, message: 'subCategoryId is required' });
-    if (!prefixCode?.trim()) return res.status(400).json({ success: false, message: 'prefixCode is required' });
+    if (!categoryId)    throw new BadRequestError('categoryId is required');
+    if (!subCategoryId) throw new BadRequestError('subCategoryId is required');
+    if (!prefixCode?.trim()) throw new BadRequestError('prefixCode is required');
     if (!digitCount || Number(digitCount) < 1)
-      return res.status(400).json({ success: false, message: 'digitCount must be a positive number' });
+      throw new BadRequestError('digitCount must be a positive number');
 
     const start = Number(startingNumber);
     const end   = Number(endingNumber);
     if (isNaN(start) || isNaN(end)) {
-      return res.status(400).json({ success: false, message: 'startingNumber and endingNumber must be numbers' });
+      throw new BadRequestError('startingNumber and endingNumber must be numbers');
     }
     if (end <= start) {
-      return res.status(400).json({ success: false, message: 'endingNumber must be greater than startingNumber' });
+      throw new BadRequestError('endingNumber must be greater than startingNumber');
     }
 
     const totalNumbers = end - start;
@@ -85,10 +87,10 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Record not found' });
+      throw new NotFoundError('Record not found');
     }
-    console.error('[partNumberBase] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -99,10 +101,10 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Record not found' });
+      throw new NotFoundError('Record not found');
     }
-    console.error('[partNumberBase] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -110,12 +112,12 @@ export const generatePartNumber = async (req, res) => {
   try {
     const { prefix } = req.body;
     if (!prefix?.trim()) {
-      return res.status(400).json({ success: false, message: 'prefix is required' });
+      throw new BadRequestError('prefix is required');
     }
     const result = await PNBModel.generatePartNumberTx(req.db, prefix.trim().toUpperCase());
     res.json({ success: true, data: result });
   } catch (err) {
-    console.error('[partNumberBase] generatePartNumber error:', err);
+    
     const isLimitError = err.message?.includes('limit exceeded') || err.message?.includes('No active');
     res.status(isLimitError ? 422 : 500).json({ success: false, message: err.message });
   }
@@ -125,15 +127,15 @@ export const previewPartNumber = async (req, res) => {
   try {
     const prefix = req.query.prefix?.trim().toUpperCase();
     if (!prefix) {
-      return res.status(400).json({ success: false, message: 'prefix query param is required' });
+      throw new BadRequestError('prefix query param is required');
     }
     const result = await PNBModel.previewNextPartNumber(req.db, prefix);
     if (!result) {
-      return res.status(404).json({ success: false, message: `No active PartNumberBase for prefix "${prefix}"` });
+      throw new NotFoundError(`No active PartNumberBase for prefix "${prefix}"`);
     }
     res.json({ success: true, data: result });
   } catch (err) {
-    console.error('[partNumberBase] previewPartNumber error:', err);
+    
     const isLimitError = err.message?.includes('limit exceeded');
     res.status(isLimitError ? 422 : 500).json({ success: false, message: err.message });
   }

@@ -1,4 +1,6 @@
 import * as PRModel from '../models/purchaseRequestModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 const toFloat = (v) => (v !== '' && v != null ? parseFloat(v) || 0 : 0);
 const toInt   = (v) => (v !== '' && v != null ? parseInt(v, 10) || null : null);
@@ -22,8 +24,8 @@ export const getNextNo = async (req, res) => {
     const result = await PRModel.getNextPrNo(req.db);
     res.json({ success: true, ...result });
   } catch (err) {
-    console.error('[purchaseRequest] getNextNo error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -32,8 +34,8 @@ export const getAll = async (req, res) => {
     const data = await PRModel.getAllPurchaseRequests(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[purchaseRequest] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -41,11 +43,11 @@ export const getOne = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const data = await PRModel.getPurchaseRequestById(req.db, id);
-    if (!data) return res.status(404).json({ success: false, message: 'Purchase request not found' });
+    if (!data) throw new NotFoundError('Purchase request not found');
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[purchaseRequest] getOne error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -60,7 +62,7 @@ export const create = async (req, res) => {
     } = req.body;
 
     if (!prNo) {
-      return res.status(400).json({ success: false, message: 'prNo is required' });
+      throw new BadRequestError('prNo is required');
     }
 
     const headerData = {
@@ -85,13 +87,13 @@ export const create = async (req, res) => {
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Purchase request number already exists' });
+      throw new ConflictError('Purchase request number already exists');
     }
     if (err.code === 'P2003') {
-      return res.status(400).json({ success: false, message: 'Invalid department or team reference' });
+      throw new BadRequestError('Invalid department or team reference');
     }
-    console.error('[purchaseRequest] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -127,13 +129,13 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Purchase request not found' });
+      throw new NotFoundError('Purchase request not found');
     }
     if (err.code === 'P2003') {
-      return res.status(400).json({ success: false, message: 'Invalid department or team reference' });
+      throw new BadRequestError('Invalid department or team reference');
     }
-    console.error('[purchaseRequest] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -144,9 +146,9 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Purchase request not found' });
+      throw new NotFoundError('Purchase request not found');
     }
-    console.error('[purchaseRequest] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

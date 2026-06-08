@@ -1,12 +1,14 @@
 import * as SubCatModel from '../models/subCategoryMasterModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 export const getAll = async (req, res) => {
   try {
     const data = await SubCatModel.getAllSubCategories(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[subCategoryMaster] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -14,13 +16,13 @@ export const getByCategory = async (req, res) => {
   try {
     const categoryId = parseInt(req.params.categoryId);
     if (isNaN(categoryId)) {
-      return res.status(400).json({ success: false, message: 'Invalid categoryId' });
+      throw new BadRequestError('Invalid categoryId');
     }
     const data = await SubCatModel.getSubCategoriesByCategory(req.db, categoryId);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[subCategoryMaster] getByCategory error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -28,13 +30,13 @@ export const create = async (req, res) => {
   try {
     const { categoryId, subCategoryName, prefixCode, description } = req.body;
     if (!categoryId) {
-      return res.status(400).json({ success: false, message: 'categoryId is required' });
+      throw new BadRequestError('categoryId is required');
     }
     if (!subCategoryName?.trim()) {
-      return res.status(400).json({ success: false, message: 'subCategoryName is required' });
+      throw new BadRequestError('subCategoryName is required');
     }
     if (!prefixCode?.trim()) {
-      return res.status(400).json({ success: false, message: 'prefixCode is required' });
+      throw new BadRequestError('prefixCode is required');
     }
     const record = await SubCatModel.createSubCategory(req.db, {
       categoryId: Number(categoryId),
@@ -44,14 +46,14 @@ export const create = async (req, res) => {
     });
     res.status(201).json({ success: true, data: record });
   } catch (err) {
-    console.error('[subCategoryMaster] create error:', err);
+    
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'SubCategory name already exists under this category' });
+      throw new ConflictError('SubCategory name already exists under this category');
     }
     if (err.code === 'P2003') {
-      return res.status(400).json({ success: false, message: 'Category not found' });
+      throw new BadRequestError('Category not found');
     }
-    res.status(500).json({ success: false, message: err.message });
+    throw err;
   }
 };
 
@@ -60,13 +62,13 @@ export const update = async (req, res) => {
     const id = parseInt(req.params.id);
     const { categoryId, subCategoryName, prefixCode, description } = req.body;
     if (!categoryId) {
-      return res.status(400).json({ success: false, message: 'categoryId is required' });
+      throw new BadRequestError('categoryId is required');
     }
     if (!subCategoryName?.trim()) {
-      return res.status(400).json({ success: false, message: 'subCategoryName is required' });
+      throw new BadRequestError('subCategoryName is required');
     }
     if (!prefixCode?.trim()) {
-      return res.status(400).json({ success: false, message: 'prefixCode is required' });
+      throw new BadRequestError('prefixCode is required');
     }
     const record = await SubCatModel.updateSubCategory(req.db, id, {
       categoryId: Number(categoryId),
@@ -77,13 +79,13 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'SubCategory not found' });
+      throw new NotFoundError('SubCategory not found');
     }
     if (err.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'SubCategory name already exists under this category' });
+      throw new ConflictError('SubCategory name already exists under this category');
     }
-    console.error('[subCategoryMaster] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -94,9 +96,9 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'SubCategory not found' });
+      throw new NotFoundError('SubCategory not found');
     }
-    console.error('[subCategoryMaster] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };

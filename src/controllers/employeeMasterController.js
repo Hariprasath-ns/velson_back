@@ -1,4 +1,6 @@
 import * as EmployeeModel from '../models/employeeMasterModel.js';
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+
 
 const toDate = (v) => (v && v.trim() ? new Date(v) : null);
 
@@ -24,8 +26,8 @@ export const getAll = async (req, res) => {
     const data = await EmployeeModel.getAllEmployees(req.db);
     res.json({ success: true, data });
   } catch (err) {
-    console.error('[employeeMaster] getAll error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -34,8 +36,8 @@ export const getNextCode = async (req, res) => {
     const nextCode = await EmployeeModel.getNextEmpCode(req.db);
     res.json({ success: true, nextCode });
   } catch (err) {
-    console.error('[employeeMaster] getNextCode error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    
+    throw err;
   }
 };
 
@@ -43,17 +45,17 @@ export const getById = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const record = await EmployeeModel.getEmployeeById(req.db, id);
-    if (!record) return res.status(404).json({ success: false, message: 'Employee not found' });
+    if (!record) throw new NotFoundError('Employee not found');
     res.json({ success: true, data: record });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    throw err;
   }
 };
 
 export const create = async (req, res) => {
   try {
     if (!req.body.empName?.trim())
-      return res.status(400).json({ success: false, message: 'empName is required' });
+      throw new BadRequestError('empName is required');
 
     const empCode = req.body.empCode?.trim()
       ? req.body.empCode.trim()
@@ -68,9 +70,9 @@ export const create = async (req, res) => {
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002')
-      return res.status(409).json({ success: false, message: 'Employee code already exists' });
-    console.error('[employeeMaster] create error:', err);
-    res.status(500).json({ success: false, message: err.message });
+      throw new ConflictError('Employee code already exists');
+    
+    throw err;
   }
 };
 
@@ -78,7 +80,7 @@ export const update = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (!req.body.empName?.trim())
-      return res.status(400).json({ success: false, message: 'empName is required' });
+      throw new BadRequestError('empName is required');
 
     const data = buildData(req.body);
     data.updatedBy = req.body.updatedBy || 'Admin';
@@ -87,9 +89,9 @@ export const update = async (req, res) => {
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025')
-      return res.status(404).json({ success: false, message: 'Employee not found' });
-    console.error('[employeeMaster] update error:', err);
-    res.status(500).json({ success: false, message: err.message });
+      throw new NotFoundError('Employee not found');
+    
+    throw err;
   }
 };
 
@@ -100,8 +102,8 @@ export const remove = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025')
-      return res.status(404).json({ success: false, message: 'Employee not found' });
-    console.error('[employeeMaster] delete error:', err);
-    res.status(500).json({ success: false, message: err.message });
+      throw new NotFoundError('Employee not found');
+    
+    throw err;
   }
 };

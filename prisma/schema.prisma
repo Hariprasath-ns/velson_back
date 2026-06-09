@@ -916,9 +916,12 @@ model JobCard {
   partImageMime      String?
   status             String            @default("Pending")
   approvedDate       DateTime?
+  approvedBy         String?
   rejectedDate       DateTime?
   cancelledDate      DateTime?
   cancellationReason String?
+  workingStartDate   DateTime?
+  workingEndDate     DateTime?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   lineItems          JobCardLineItem[]
@@ -927,24 +930,26 @@ model JobCard {
 }
 
 model JobCardLineItem {
-  id            Int       @id @default(autoincrement())
-  jobCardId     Int
-  slNo          Int
-  partNo        String
-  partName      String
-  planQty       Float?
-  uom           String?
-  processName   String?
-  processDate   DateTime?
-  state         String?
-  empName       String?
-  machineName   String?
-  workCenterNo  String?
-  remarks       String?
-  notApplicable Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  jobCard       JobCard   @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+  id               Int       @id @default(autoincrement())
+  jobCardId        Int
+  slNo             Int
+  partNo           String
+  partName         String
+  planQty          Float?
+  uom              String?
+  processName      String?
+  processDate      DateTime?
+  state            String?
+  empName          String?
+  machineName      String?
+  workCenterNo     String?
+  remarks          String?
+  notApplicable    Boolean   @default(false)
+  workingStartDate DateTime?
+  workingEndDate   DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  jobCard          JobCard   @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
 
   @@map("job_card_line_item")
 }

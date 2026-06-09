@@ -23,6 +23,8 @@ const mapResponse = (jc) => {
     ...jc,
     currentDate: jc.currentDate ? jc.currentDate.toISOString().split('T')[0] : null,
     requiredDate: jc.requiredDate ? jc.requiredDate.toISOString().split('T')[0] : null,
+    workingStartDate: jc.workingStartDate ? jc.workingStartDate.toISOString().split('T')[0] : null,
+    workingEndDate: jc.workingEndDate ? jc.workingEndDate.toISOString().split('T')[0] : null,
     partImage: jc.partImage ? `data:${jc.partImageMime || 'image/jpeg'};base64,${jc.partImage.toString('base64')}` : null,
   };
 };
@@ -95,7 +97,7 @@ export const update = async (req, res) => {
     const id = parseInt(req.params.id, 10);
     const {
       model, qtyV, currentDate, priority, requiredDate, note, partImage, lineItems,
-      status, approvedDate, rejectedDate, cancelledDate, cancellationReason
+      status, approvedDate, rejectedDate, cancelledDate, cancellationReason, approvedBy
     } = req.body;
 
     const { partImage: imgBuffer, partImageMime: imgMime } = parseBase64Image(partImage);
@@ -110,6 +112,7 @@ export const update = async (req, res) => {
       ...(partImage !== undefined && { partImage: imgBuffer, partImageMime: imgMime }),
       status: status !== undefined ? status : undefined,
       approvedDate: approvedDate ? new Date(approvedDate) : (approvedDate === null ? null : undefined),
+      approvedBy: approvedBy !== undefined ? approvedBy : undefined,
       rejectedDate: rejectedDate ? new Date(rejectedDate) : (rejectedDate === null ? null : undefined),
       cancelledDate: cancelledDate ? new Date(cancelledDate) : (cancelledDate === null ? null : undefined),
       cancellationReason: cancellationReason !== undefined ? cancellationReason : undefined,
@@ -171,4 +174,18 @@ export const updateProcess = async (req, res) => {
     throw err;
   }
 };
+
+export const closeRouteCard = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      throw new BadRequestError('Invalid Job Card ID');
+    }
+    const result = await JobCardModel.closeRouteCard(req.db, id);
+    res.json({ success: true, data: mapResponse(result) });
+  } catch (err) {
+    throw err;
+  }
+};
+
 

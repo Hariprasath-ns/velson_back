@@ -14,6 +14,21 @@ export const authenticate = (req, res, next) => {
     return next();
   }
 
+  // Bypass token verification for read-only media and file downloads
+  if (req.method === "GET") {
+    const path = req.path || "";
+    if (
+      path.includes("/download-image") ||
+      path.includes("/download-pdf") ||
+      path.includes("/download-logo") ||
+      path.includes("/download-document") ||
+      path.includes("/download") ||
+      path.includes("/customer-complaint/image/")
+    ) {
+      return next();
+    }
+  }
+
   const header = req.headers.authorization;
   if (!header || !header.startsWith("Bearer ")) {
     throw new UnauthorizedError("Authorization token is missing", ErrorCodes.UNAUTHORIZED);

@@ -925,6 +925,9 @@ model JobCard {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   lineItems          JobCardLineItem[]
+  processMenus       JobProcessMenu[]
+  selfStockIn        Boolean?          @default(false)
+  selectedCustomers  Json?
 
   @@map("job_card")
 }
@@ -1045,3 +1048,65 @@ model CustomerComplaintImage {
 
   @@map("customer_complaint_image")
 }
+
+model JobProcessMenu {
+  id           Int       @id @default(autoincrement())
+  jobCardId    Int       @map("job_card_id")
+  partNo       String    @map("part_no")
+  partName     String    @map("part_name")
+  processName  String    @map("process_name")
+  processOrder String    @map("process_order")
+  teamId       String?   @map("team_id")
+  machineCode  String?   @map("machine_code")
+  machineName  String?   @map("machine_name")
+  days         String?   @map("pm_days")
+  hours         String?   @map("pm_hours")
+  minutes      String?   @map("minutes")
+  settingTime  String?   @map("setting_time")
+  cycleTime    String?   @map("cycle_time")
+  handlingTime String?   @map("handling_time")
+  idleTime     String?   @map("idle_time")
+  
+  // Auditing and Soft-Delete flags
+  isActive     Boolean   @default(true) @map("is_active")
+  deletedAt    DateTime? @map("deleted_at")
+  deletedBy    String?   @map("deleted_by")
+  createdBy    String?   @default("System") @map("created_by")
+  updatedBy    String?   @map("updated_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relationships
+  jobCard      JobCard   @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+
+  @@unique([jobCardId, partNo, processName, processOrder])
+  @@index([jobCardId, partNo, isActive])
+  @@map("job_process_menu")
+}
+
+model MachineBreakdown {
+  id                 Int      @id @default(autoincrement())
+  mwrNo              String   @unique
+  machineName        String
+  jobCardNo          String?
+  partNo             String
+  processStage       String?
+  location           String?
+  date               String
+  reportedBy         String
+  priority           String?
+  problemDescription String?
+  status             String   @default("waiting_clearance")
+  actionTaken        String?
+  remark             String?
+  solvedBy           String?
+  solvedDate         String?
+  createdBy          String?  @default("Admin")
+  updatedBy          String?  @default("Admin")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("machine_breakdown")
+}
+
+

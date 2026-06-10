@@ -1,5 +1,6 @@
 const JC_INCLUDE = {
   lineItems: { orderBy: { slNo: 'asc' } },
+  processMenus: { orderBy: { processOrder: 'asc' } },
 };
 
 export const getAllJobCards = (db) =>
@@ -37,6 +38,43 @@ export const createJobCard = (db, headerData, detailRows) =>
       await tx.jobCardLineItem.createMany({
         data: detailRows.map((r, i) => ({ ...r, jobCardId: master.id, slNo: i + 1 })),
       });
+      
+      // Snapshot processes from ProcessMaster into JobProcessMenu
+      const partNamesLower = detailRows.map(r => (r.partName || '').trim().toLowerCase()).filter(Boolean);
+      if (partNamesLower.length > 0) {
+        const allProcessMasters = await tx.processMaster.findMany();
+        const matchedMasters = allProcessMasters.filter(pm => 
+          pm.partName && partNamesLower.includes(pm.partName.trim().toLowerCase())
+        );
+        if (matchedMasters.length > 0) {
+          await tx.jobProcessMenu.createMany({
+            data: matchedMasters.map(pm => {
+              const matchedDetailRow = detailRows.find(dr => 
+                dr.partName && dr.partName.trim().toLowerCase() === pm.partName.trim().toLowerCase()
+              );
+              return {
+                jobCardId: master.id,
+                partNo: matchedDetailRow ? matchedDetailRow.partNo : '',
+                partName: pm.partName,
+                processName: pm.processName,
+                processOrder: pm.processOrder,
+                teamId: pm.teamId,
+                machineCode: pm.machineCode,
+                machineName: pm.machineName,
+                days: pm.days,
+                hours: pm.hours,
+                minutes: pm.minutes,
+                settingTime: pm.settingTime,
+                cycleTime: pm.cycleTime,
+                handlingTime: pm.handlingTime,
+                idleTime: pm.idleTime,
+                isActive: true,
+                createdBy: 'System'
+              };
+            })
+          });
+        }
+      }
     }
     return tx.jobCard.findUnique({
       where: { id: master.id },
@@ -54,6 +92,44 @@ export const updateJobCard = (db, id, headerData, detailRows) =>
       await tx.jobCardLineItem.createMany({
         data: detailRows.map((r, i) => ({ ...r, jobCardId: id, slNo: i + 1 })),
       });
+
+      // Synchronize process snapshots in JobProcessMenu
+      await tx.jobProcessMenu.deleteMany({ where: { jobCardId: id } });
+      const partNamesLower = detailRows.map(r => (r.partName || '').trim().toLowerCase()).filter(Boolean);
+      if (partNamesLower.length > 0) {
+        const allProcessMasters = await tx.processMaster.findMany();
+        const matchedMasters = allProcessMasters.filter(pm => 
+          pm.partName && partNamesLower.includes(pm.partName.trim().toLowerCase())
+        );
+        if (matchedMasters.length > 0) {
+          await tx.jobProcessMenu.createMany({
+            data: matchedMasters.map(pm => {
+              const matchedDetailRow = detailRows.find(dr => 
+                dr.partName && dr.partName.trim().toLowerCase() === pm.partName.trim().toLowerCase()
+              );
+              return {
+                jobCardId: id,
+                partNo: matchedDetailRow ? matchedDetailRow.partNo : '',
+                partName: pm.partName,
+                processName: pm.processName,
+                processOrder: pm.processOrder,
+                teamId: pm.teamId,
+                machineCode: pm.machineCode,
+                machineName: pm.machineName,
+                days: pm.days,
+                hours: pm.hours,
+                minutes: pm.minutes,
+                settingTime: pm.settingTime,
+                cycleTime: pm.cycleTime,
+                handlingTime: pm.handlingTime,
+                idleTime: pm.idleTime,
+                isActive: true,
+                createdBy: 'System'
+              };
+            })
+          });
+        }
+      }
     }
     return tx.jobCard.findUnique({
       where: { id },
@@ -288,5 +364,126 @@ export const closeRouteCard = async (db, id) => {
     return updatedJobCard;
   }, TX_OPTS);
 };
+
+export const getJobProcessMenu = async (db, jobNo) => {
+  // 1. Find the JobCard
+  const jobCard = await db.jobCard.findUnique({
+    where: { jobNo },
+    include: { lineItems: true }
+  });
+
+  if (!jobCard) {
+    throw new Error('Job Card not found');
+  }
+
+  // 2. Fetch existing JobProcessMenu records
+  let records = await db.jobProcessMenu.findMany({
+    where: { jobCardId: jobCard.id },
+    orderBy: { processOrder: 'asc' }
+  });
+
+  // 3. Backward compatibility: if no records exist in JobProcessMenu, snapshot them from ProcessMaster
+  if (records.length === 0) {
+    const partNames = jobCard.lineItems
+      .filter(li => !li.processName)
+      .map(li => li.partName)
+      .filter(Boolean);
+    
+    const partNamesUnique = [...new Set(partNames)];
+
+    if (partNamesUnique.length > 0) {
+      const allProcessMasters = await db.processMaster.findMany();
+      const matchedMasters = allProcessMasters.filter(pm =>
+        pm.partName && partNamesUnique.map(n => n.toLowerCase().trim()).includes(pm.partName.toLowerCase().trim())
+      );
+
+      if (matchedMasters.length > 0) {
+        const snapshotData = matchedMasters.map(pm => {
+          const matchedLineItem = jobCard.lineItems.find(li =>
+            li.partName && li.partName.toLowerCase().trim() === pm.partName.toLowerCase().trim()
+          );
+          return {
+            jobCardId: jobCard.id,
+            partNo: matchedLineItem ? matchedLineItem.partNo : '',
+            partName: pm.partName,
+            processName: pm.processName,
+            processOrder: pm.processOrder,
+            teamId: pm.teamId,
+            machineCode: pm.machineCode,
+            machineName: pm.machineName,
+            days: pm.days,
+            hours: pm.hours,
+            minutes: pm.minutes,
+            settingTime: pm.settingTime,
+            cycleTime: pm.cycleTime,
+            handlingTime: pm.handlingTime,
+            idleTime: pm.idleTime,
+            isActive: true,
+            createdBy: 'System'
+          };
+        });
+
+        await db.jobProcessMenu.createMany({
+          data: snapshotData,
+          skipDuplicates: true
+        });
+
+        records = await db.jobProcessMenu.findMany({
+          where: { jobCardId: jobCard.id },
+          orderBy: { processOrder: 'asc' }
+        });
+      }
+    }
+  }
+
+  return records;
+};
+
+export const updateJobProcessMenu = async (db, jobNo, partNo, processes) => {
+  // 1. Find the JobCard
+  const jobCard = await db.jobCard.findUnique({
+    where: { jobNo }
+  });
+
+  if (!jobCard) {
+    throw new Error('Job Card not found');
+  }
+
+  // 2. Update status of the processes
+  await db.$transaction(async (tx) => {
+    for (const proc of processes) {
+      const { processName, processOrder, isActive } = proc;
+      
+      const existing = await tx.jobProcessMenu.findFirst({
+        where: {
+          jobCardId: jobCard.id,
+          processName,
+          processOrder: processOrder ? String(processOrder) : undefined,
+          ...(partNo && { partNo })
+        }
+      });
+
+      if (existing) {
+        await tx.jobProcessMenu.update({
+          where: { id: existing.id },
+          data: {
+            isActive: !!isActive,
+            ...(!isActive && {
+              deletedAt: new Date(),
+              deletedBy: 'User'
+            }),
+            ...(isActive && {
+              deletedAt: null,
+              deletedBy: null
+            })
+          }
+        });
+      }
+    }
+  });
+
+  return { success: true };
+};
+
 
 

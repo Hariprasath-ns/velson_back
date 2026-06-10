@@ -1,2 +1,0 @@
-ALTER TABLE "item_master" ADD COLUMN IF NOT EXISTS "imagePath" TEXT;
-ALTER TABLE "item_master" ADD COLUMN IF NOT EXISTS "pdfPath"   TEXT;

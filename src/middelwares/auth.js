@@ -6,7 +6,7 @@ import { ErrorCodes } from "../utils/errorCodes.js";
 // Set BYPASS_AUTH=true in .env to disable token checks (dev / demo mode).
 // Must match LOGIN_REQUIRED=false on the frontend.
 // ─────────────────────────────────────────────────────────────────────────────
-const BYPASS = process.env.BYPASS_AUTH === "true";
+const BYPASS = process.env.BYPASS_AUTH;
 
 export const authenticate = (req, res, next) => {
   if (BYPASS) {

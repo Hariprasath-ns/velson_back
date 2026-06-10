@@ -49,6 +49,8 @@ const REF_TYPE_NAMES = [
   "Material_Grade",
   "Material_Req_For",
   "Material_Type",
+  "QC_Check_Method",
+  "QC_Characteristics_Master",
   "OUTSOURCE_STATUS_TYPE",
   "OUTSOURCE_TYPE",
   "Quotation_Type",

@@ -60,7 +60,8 @@ export const getNextNo = async (req, res) => {
 export const create = async (req, res) => {
   try {
     const {
-      jobNo, model, qtyV, currentDate, priority, requiredDate, note, partImage, lineItems
+      jobNo, model, qtyV, currentDate, priority, requiredDate, note, partImage, lineItems,
+      selfStockIn, selectedCustomers
     } = req.body;
 
     if (!jobNo) {
@@ -79,6 +80,8 @@ export const create = async (req, res) => {
       note: note || null,
       partImage: imgBuffer,
       partImageMime: imgMime,
+      selfStockIn: selfStockIn !== undefined ? !!selfStockIn : false,
+      selectedCustomers: selectedCustomers || null,
     };
 
     const record = await JobCardModel.createJobCard(req.db, headerData, buildDetailRows(lineItems));
@@ -97,7 +100,8 @@ export const update = async (req, res) => {
     const id = parseInt(req.params.id, 10);
     const {
       model, qtyV, currentDate, priority, requiredDate, note, partImage, lineItems,
-      status, approvedDate, rejectedDate, cancelledDate, cancellationReason, approvedBy
+      status, approvedDate, rejectedDate, cancelledDate, cancellationReason, approvedBy,
+      selfStockIn, selectedCustomers
     } = req.body;
 
     const { partImage: imgBuffer, partImageMime: imgMime } = parseBase64Image(partImage);
@@ -116,6 +120,8 @@ export const update = async (req, res) => {
       rejectedDate: rejectedDate ? new Date(rejectedDate) : (rejectedDate === null ? null : undefined),
       cancelledDate: cancelledDate ? new Date(cancelledDate) : (cancelledDate === null ? null : undefined),
       cancellationReason: cancellationReason !== undefined ? cancellationReason : undefined,
+      ...(selfStockIn !== undefined && { selfStockIn: !!selfStockIn }),
+      ...(selectedCustomers !== undefined && { selectedCustomers: selectedCustomers || null }),
     };
 
     const detailRows = lineItems !== undefined ? buildDetailRows(lineItems) : undefined;
@@ -188,4 +194,34 @@ export const closeRouteCard = async (req, res) => {
   }
 };
 
+export const getJobProcessMenu = async (req, res) => {
+  try {
+    const { jobNo } = req.query;
+    if (!jobNo) {
+      throw new BadRequestError('jobNo query parameter is required');
+    }
+    const result = await JobCardModel.getJobProcessMenu(req.db, jobNo);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    if (err.message.includes('not found')) {
+      throw new NotFoundError(err.message);
+    }
+    throw err;
+  }
+};
 
+export const updateJobProcessMenu = async (req, res) => {
+  try {
+    const { jobNo, partNo, processes } = req.body;
+    if (!jobNo || !processes || !Array.isArray(processes)) {
+      throw new BadRequestError('jobNo and processes array are required');
+    }
+    const result = await JobCardModel.updateJobProcessMenu(req.db, jobNo, partNo, processes);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    if (err.message.includes('not found')) {
+      throw new NotFoundError(err.message);
+    }
+    throw err;
+  }
+};

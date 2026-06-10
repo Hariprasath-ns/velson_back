@@ -46,6 +46,7 @@ import bomCreationRoute from "./routes/bomCreationRoute.js";
 import jobCardRoute from "./routes/jobCardRoute.js";
 import processMasterRoute from "./routes/processMasterRoute.js";
 import customerComplaintRoute from "./routes/customerComplaintRoute.js";
+import machineBreakdownRoute from "./routes/machineBreakdownRoute.js";
 
 
 
@@ -98,6 +99,7 @@ app.use("/api", bomCreationRoute);
 app.use("/api", jobCardRoute);
 app.use("/api", processMasterRoute);
 app.use("/api", customerComplaintRoute);
+app.use("/api", machineBreakdownRoute);
 
 
 // 404 handler for unmatched routes
@@ -107,7 +109,7 @@ app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 
 const server = app.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);

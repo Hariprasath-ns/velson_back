@@ -39,13 +39,52 @@ export const create = async (req, res) => {
   try {
     const {
       customerType, cCode, customerName, address, address2, address3, address4,
-      city, country, state, stateCode, pinCode, contactPerson, mobile, phone,
+      city, country, state, stateCode, pinCode, contactPerson, mobile, mobileCode, phone, phoneCode,
       email, website, aadharNo, gstNo, panNo, bankName, branchName, accountName,
       accountNumber, ifscCode, micrCode, remarks, createdBy,
     } = req.body;
 
     if (!customerName || !customerName.trim()) {
       throw new BadRequestError('customerName is required');
+    }
+
+    let cleanEmail = email && email.trim() ? email.trim() : null;
+    let cleanPan = panNo && panNo.trim() ? panNo.trim().toUpperCase() : null;
+    let cleanGst = gstNo && gstNo.trim() ? gstNo.trim().toUpperCase() : null;
+    let cleanAadhar = aadharNo ? aadharNo.replace(/\s|-/g, '') : null;
+
+    if (cleanEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cleanEmail)) {
+        throw new BadRequestError('Invalid email format');
+      }
+    }
+
+    if (cleanPan) {
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!panRegex.test(cleanPan)) {
+        throw new BadRequestError('Invalid PAN format');
+      }
+    }
+
+    if (cleanGst) {
+      const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+      if (!gstRegex.test(cleanGst)) {
+        throw new BadRequestError('Invalid GST format');
+      }
+      if (cleanPan) {
+        const gstPan = cleanGst.slice(2, 12);
+        if (gstPan !== cleanPan) {
+          throw new BadRequestError('GST number does not match the entered PAN number');
+        }
+      }
+    }
+
+    if (cleanAadhar) {
+      const aadharRegex = /^\d{12}$/;
+      if (!aadharRegex.test(cleanAadhar)) {
+        throw new BadRequestError('Invalid Aadhaar format');
+      }
     }
 
     const resolvedCCode = cCode && cCode.trim()
@@ -67,12 +106,14 @@ export const create = async (req, res) => {
       pinCode: pinCode || null,
       contactPerson: contactPerson || null,
       mobile: mobile || null,
+      mobileCode: mobileCode || null,
       phone: phone || null,
-      email: email || null,
+      phoneCode: phoneCode || null,
+      email: cleanEmail,
       website: website || null,
-      aadharNo: aadharNo || null,
-      gstNo: gstNo || null,
-      panNo: panNo || null,
+      aadharNo: cleanAadhar,
+      gstNo: cleanGst,
+      panNo: cleanPan,
       bankName: bankName || null,
       branchName: branchName || null,
       accountName: accountName || null,
@@ -99,13 +140,52 @@ export const update = async (req, res) => {
     const id = parseInt(req.params.id);
     const {
       customerType, cCode, customerName, address, address2, address3, address4,
-      city, country, state, stateCode, pinCode, contactPerson, mobile, phone,
+      city, country, state, stateCode, pinCode, contactPerson, mobile, mobileCode, phone, phoneCode,
       email, website, aadharNo, gstNo, panNo, bankName, branchName, accountName,
       accountNumber, ifscCode, micrCode, remarks, updatedBy,
     } = req.body;
 
     if (!customerName || !customerName.trim()) {
       throw new BadRequestError('customerName is required');
+    }
+
+    let cleanEmail = email && email.trim() ? email.trim() : null;
+    let cleanPan = panNo && panNo.trim() ? panNo.trim().toUpperCase() : null;
+    let cleanGst = gstNo && gstNo.trim() ? gstNo.trim().toUpperCase() : null;
+    let cleanAadhar = aadharNo ? aadharNo.replace(/\s|-/g, '') : null;
+
+    if (cleanEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cleanEmail)) {
+        throw new BadRequestError('Invalid email format');
+      }
+    }
+
+    if (cleanPan) {
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!panRegex.test(cleanPan)) {
+        throw new BadRequestError('Invalid PAN format');
+      }
+    }
+
+    if (cleanGst) {
+      const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+      if (!gstRegex.test(cleanGst)) {
+        throw new BadRequestError('Invalid GST format');
+      }
+      if (cleanPan) {
+        const gstPan = cleanGst.slice(2, 12);
+        if (gstPan !== cleanPan) {
+          throw new BadRequestError('GST number does not match the entered PAN number');
+        }
+      }
+    }
+
+    if (cleanAadhar) {
+      const aadharRegex = /^\d{12}$/;
+      if (!aadharRegex.test(cleanAadhar)) {
+        throw new BadRequestError('Invalid Aadhaar format');
+      }
     }
 
     const record = await CustomerModel.updateCustomer(req.db, id, {
@@ -123,12 +203,14 @@ export const update = async (req, res) => {
       pinCode: pinCode || null,
       contactPerson: contactPerson || null,
       mobile: mobile || null,
+      mobileCode: mobileCode || null,
       phone: phone || null,
-      email: email || null,
+      phoneCode: phoneCode || null,
+      email: cleanEmail,
       website: website || null,
-      aadharNo: aadharNo || null,
-      gstNo: gstNo || null,
-      panNo: panNo || null,
+      aadharNo: cleanAadhar,
+      gstNo: cleanGst,
+      panNo: cleanPan,
       bankName: bankName || null,
       branchName: branchName || null,
       accountName: accountName || null,

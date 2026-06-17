@@ -18,7 +18,7 @@ export const create = async (req, res) => {
       bookingId, bookingDate, customerName, customerCode, 
       customerVehicleCount, vehicleSerialNo, serialNo, vehicleNo, 
       serviceJobNo, vehicleModelNo, modelSubType, vehicleName, 
-      status, remarks 
+      status, tempStatus, remarks 
     } = req.body;
 
     if (!bookingId || !bookingDate || !customerName || !serviceJobNo || !vehicleModelNo || !modelSubType || !vehicleName) {
@@ -39,6 +39,7 @@ export const create = async (req, res) => {
       modelSubType,
       vehicleName,
       status: status || 'Pending',
+      tempStatus: tempStatus || 'Open',
       remarks: remarks || null
     });
     res.status(201).json({ success: true, data: record });
@@ -55,7 +56,7 @@ export const update = async (req, res) => {
       bookingId, bookingDate, customerName, customerCode, 
       customerVehicleCount, vehicleSerialNo, serialNo, vehicleNo, 
       serviceJobNo, vehicleModelNo, modelSubType, vehicleName, 
-      status, remarks 
+      status, tempStatus, remarks 
     } = req.body;
 
     const record = await Model.update(req.db, id, {
@@ -72,6 +73,7 @@ export const update = async (req, res) => {
       modelSubType,
       vehicleName,
       status,
+      tempStatus,
       remarks: remarks || null
     });
     res.json({ success: true, data: record });

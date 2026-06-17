@@ -219,7 +219,9 @@ model SupplierMaster {
   pinCode        String?
   contactPerson  String?
   mobile         String?
+  mobileCode     String?
   phone          String?
+  phoneCode      String?
   email          String?
   website        String?
   gstNo          String?
@@ -272,7 +274,9 @@ model CustomerMaster {
   pinCode        String?
   contactPerson  String?
   mobile         String?
+  mobileCode     String?
   phone          String?
+  phoneCode      String?
   email          String?
   website        String?
   aadharNo       String?
@@ -849,6 +853,7 @@ model ServiceBooking {
   modelSubType          String
   vehicleName           String
   status                String   @default("Pending")
+  tempStatus            String?  @default("Open")
   remarks               String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -872,7 +877,7 @@ model ServiceDetail {
   status            String   @default("Open")
   remarks           String?
   servicePartNo     String?
-  checkedAssemblies Int[]
+  checkedAssemblies String[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -1108,5 +1113,31 @@ model MachineBreakdown {
 
   @@map("machine_breakdown")
 }
+
+model ServiceSpare {
+  id                  Int      @id @default(autoincrement())
+  serviceJobNo        String
+  bookingCustomerCode String?
+  customerName        String?
+  customerCode        String?
+  displayOrder        Int?     @default(1)
+  displayDate         String?
+  lastSavedAssName    String?
+  servicePartNo       String?
+  vehicleNo           String?
+  serialNo            String?
+  vehicleModelNo      String?
+  modelSubType        String?
+  vehicleName         String?
+  status              String?  @default("Open")
+  selectedParts       Int[]
+  totalAmount         Float?   @default(0)
+  savedDate           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("service_spare")
+}
+
 
 

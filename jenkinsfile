@@ -28,10 +28,10 @@ pipeline {
 
     post {
         success {
-            echo "velson_back build succeeded for branch ${env.sujeeth_docker_v2}"
+            echo "velson_back build succeeded for branch ${env.BRANCH_NAME}"
         }
         failure {
-            echo "velson_back build failed for branch ${env.sujeeth_docker_v2}"
+            echo "velson_back build failed for branch ${env.BRANCH_NAME}"
         }
     }
 }

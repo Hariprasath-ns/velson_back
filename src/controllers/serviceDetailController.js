@@ -51,7 +51,7 @@ export const create = async (req, res) => {
       status: status || 'Open',
       remarks: remarks || null,
       servicePartNo: servicePartNo || null,
-      checkedAssemblies: Array.isArray(checkedAssemblies) ? checkedAssemblies.map(id => parseInt(id, 10)) : []
+      checkedAssemblies: Array.isArray(checkedAssemblies) ? checkedAssemblies.filter(id => id !== null && id !== undefined).map(id => String(id)) : []
     });
     res.status(201).json({ success: true, data: record });
   } catch (err) {
@@ -96,7 +96,7 @@ export const update = async (req, res) => {
       status,
       remarks: remarks || null,
       servicePartNo: servicePartNo || null,
-      checkedAssemblies: Array.isArray(checkedAssemblies) ? checkedAssemblies.map(id => parseInt(id, 10)) : []
+      checkedAssemblies: Array.isArray(checkedAssemblies) ? checkedAssemblies.filter(id => id !== null && id !== undefined).map(id => String(id)) : []
     });
     res.json({ success: true, data: record });
   } catch (err) {

@@ -59,7 +59,7 @@ export const create = async (req, res) => {
     const {
       tempRequestNo, departmentTo, requestingUser, team, requestingFor,
       requestDate, requiredDate, requiredDays, storeName, bomPartName,
-      remarks, status, createdBy, items,
+      vehicleName, remarks, status, createdBy, items,
     } = req.body;
 
     const { mrNo, financialYear } = await MRModel.getNextMrNo(req.db);
@@ -77,8 +77,9 @@ export const create = async (req, res) => {
       requiredDays:   requiredDays   || null,
       storeName:      storeName      || null,
       bomPartName:    bomPartName    || null,
+      vehicleName:    vehicleName    || null,
       remarks:        remarks        || null,
-      status:         status         || 'Draft',
+      status:         status         || 'Pending',
       createdBy:      createdBy      || 'Admin',
       updatedBy:      createdBy      || 'Admin',
     };
@@ -99,7 +100,7 @@ export const update = async (req, res) => {
     const {
       departmentTo, requestingUser, team, requestingFor,
       requestDate, requiredDate, requiredDays, storeName, bomPartName,
-      remarks, status, updatedBy, items,
+      vehicleName, remarks, status, updatedBy, items,
     } = req.body;
 
     const headerData = {
@@ -112,8 +113,9 @@ export const update = async (req, res) => {
       requiredDays:   requiredDays   || null,
       storeName:      storeName      || null,
       bomPartName:    bomPartName    || null,
+      vehicleName:    vehicleName    || null,
       remarks:        remarks        || null,
-      status:         status         || 'Draft',
+      status:         status         || 'Pending',
       updatedBy:      updatedBy      || 'Admin',
     };
 

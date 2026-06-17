@@ -781,6 +781,7 @@ model MaterialRequest {
   requiredDays   String?
   storeName      String?
   bomPartName    String?
+  vehicleName    String?
   remarks        String?
   status         String                  @default("Draft")
   createdBy      String?

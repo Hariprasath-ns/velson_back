@@ -29,7 +29,7 @@ const adapter = new PrismaPg(
 const prisma = new PrismaClient({ adapter });
 
 const USERS = [
-  { name: "Administrator", email: "admin@admin.com", password: "password123", role: "admin" },
+  { name: "Administrator", email: "admin@admin.com", password: "Admin@123", role: "admin" },
   { name: "Staff User",    email: "staff@staff.com", password: "password123", role: "staff" },
   { name: "Basic User",   email: "user@user.com",   password: "password123", role: "user"  },
 ];

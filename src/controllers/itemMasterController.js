@@ -53,6 +53,9 @@ const buildData = (body, isUpdate = false) => {
     reorderLevel: parseOptFloat(body.reorderLevel),
     minStock: parseOptFloat(body.minStock),
     routeCardNo: body.routeCardNo || null,
+    barcodeType: body.barcodeType || null,
+    remark: body.remark || null,
+    rawMaterial: body.rawMaterial || null,
   };
 
   if (!isUpdate || body.imagePath !== undefined) data.imagePath = body.imagePath || null;

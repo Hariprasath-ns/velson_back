@@ -14,7 +14,8 @@
     "seedreferencetypename": "node seedreferencetypename.js",
     "seedsuppliertype": "node seedSupplierType.js",
     "seeditemgroup": "node seedItemGroupMaster.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "echo \"No lint configured yet\" && exit 0",
+    "test": "echo \"No tests configured yet\" && exit 0"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

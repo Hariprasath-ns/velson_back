@@ -8,6 +8,7 @@ const buildDetailRows = (items = []) =>
   items.map((item) => ({
     itemCode:       item.itemCode       || null,
     itemName:       item.itemName       || null,
+    qcType:         item.qcType         || null,
     supplierPartNo: item.supplierPartNo || null,
     description:    item.description    || null,
     hsnCode:        item.hsnCode        || null,

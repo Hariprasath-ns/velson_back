@@ -35,11 +35,46 @@ export const getGRNEntryById = (db, id) =>
     include: { details: { orderBy: { slNo: 'asc' } } },
   });
 
+const getYYYYMMDD = (date) => {
+  const d = new Date(date);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}${mm}${dd}`;
+};
+
 const TX_OPTS = { maxWait: 10000, timeout: 20000 };
 
 export const createGRNEntry = (db, headerData, detailRows) =>
   db.$transaction(async (tx) => {
-    const master = await tx.gRNMaster.create({ data: headerData });
+    const dateStr = getYYYYMMDD(headerData.grnDate);
+    const lastEntry = await tx.gRNMaster.findFirst({
+      where: {
+        grnbarcode: {
+          startsWith: dateStr,
+        },
+      },
+      orderBy: {
+        grnbarcode: 'desc',
+      },
+    });
+
+    let nextSeq = 1;
+    if (lastEntry && lastEntry.grnbarcode) {
+      const lastSeqStr = lastEntry.grnbarcode.slice(-3);
+      const lastSeq = parseInt(lastSeqStr, 10);
+      if (!isNaN(lastSeq)) {
+        nextSeq = lastSeq + 1;
+      }
+    }
+    const grnbarcode = `${dateStr}${String(nextSeq).padStart(3, '0')}`;
+
+    const master = await tx.gRNMaster.create({
+      data: {
+        ...headerData,
+        grnbarcode,
+      },
+    });
     if (detailRows.length > 0) {
       await tx.gRNDetail.createMany({
         data: detailRows.map((r, i) => ({ ...r, grnId: master.id, slNo: i + 1 })),
@@ -53,8 +88,40 @@ export const createGRNEntry = (db, headerData, detailRows) =>
 
 export const updateGRNEntry = (db, id, headerData, detailRows) =>
   db.$transaction(async (tx) => {
+    const existing = await tx.gRNMaster.findUnique({ where: { id } });
+    let grnbarcode = existing.grnbarcode;
+    if (!grnbarcode) {
+      const dateStr = getYYYYMMDD(headerData.grnDate || existing.grnDate);
+      const lastEntry = await tx.gRNMaster.findFirst({
+        where: {
+          grnbarcode: {
+            startsWith: dateStr,
+          },
+        },
+        orderBy: {
+          grnbarcode: 'desc',
+        },
+      });
+
+      let nextSeq = 1;
+      if (lastEntry && lastEntry.grnbarcode) {
+        const lastSeqStr = lastEntry.grnbarcode.slice(-3);
+        const lastSeq = parseInt(lastSeqStr, 10);
+        if (!isNaN(lastSeq)) {
+          nextSeq = lastSeq + 1;
+        }
+      }
+      grnbarcode = `${dateStr}${String(nextSeq).padStart(3, '0')}`;
+    }
+
     await tx.gRNDetail.deleteMany({ where: { grnId: id } });
-    await tx.gRNMaster.update({ where: { id }, data: headerData });
+    await tx.gRNMaster.update({
+      where: { id },
+      data: {
+        ...headerData,
+        grnbarcode,
+      },
+    });
     if (detailRows.length > 0) {
       await tx.gRNDetail.createMany({
         data: detailRows.map((r, i) => ({ ...r, grnId: id, slNo: i + 1 })),

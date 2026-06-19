@@ -35,7 +35,7 @@ model UserCredential {
 model UserPermission {
   id         Int      @id @default(autoincrement())
   userId     Int
-  module     String   // e.g. "company-master"
+  module     String // e.g. "company-master"
   canDisplay Boolean  @default(false)
   canSave    Boolean  @default(false)
   canEdit    Boolean  @default(false)
@@ -51,8 +51,8 @@ model UserPermission {
 
 model RolePermission {
   id         Int      @id @default(autoincrement())
-  role       String   // e.g. "ACCOUNTS", "PURCHASE"
-  module     String   // e.g. "company-master"
+  role       String // e.g. "ACCOUNTS", "PURCHASE"
+  module     String // e.g. "company-master"
   canDisplay Boolean  @default(false)
   canSave    Boolean  @default(false)
   canEdit    Boolean  @default(false)
@@ -75,7 +75,6 @@ model RefreshToken {
 
   @@map("refresh_token")
 }
-
 
 model ReferenceType {
   id               Int               @id @default(autoincrement())
@@ -727,6 +726,7 @@ model GRNMaster {
   exchangeRate   Float       @default(0)
   invoiceNo      String?
   invoiceDate    DateTime?
+  grnbarcode     String?
   qcType         String?
   discountType   String      @default("Dis_Per")
   remarks        String?
@@ -752,6 +752,7 @@ model GRNDetail {
   slNo           Int
   itemCode       String?
   itemName       String?
+  qcType         String?
   supplierPartNo String?
   description    String?
   hsnCode        String?
@@ -889,24 +890,24 @@ model PartUsageList {
 }
 
 model ServiceBooking {
-  id                    Int      @id @default(autoincrement())
-  bookingId             Int      @unique
-  bookingDate           String
-  customerName          String
-  customerCode          String?
-  customerVehicleCount  Int?     @default(1)
-  vehicleSerialNo       String?
-  serialNo              String?
-  vehicleNo             String?
-  serviceJobNo          String   @unique
-  vehicleModelNo        String
-  modelSubType          String
-  vehicleName           String
-  status                String   @default("Pending")
-  tempStatus            String?  @default("Open")
-  remarks               String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   Int      @id @default(autoincrement())
+  bookingId            Int      @unique
+  bookingDate          String
+  customerName         String
+  customerCode         String?
+  customerVehicleCount Int?     @default(1)
+  vehicleSerialNo      String?
+  serialNo             String?
+  vehicleNo            String?
+  serviceJobNo         String   @unique
+  vehicleModelNo       String
+  modelSubType         String
+  vehicleName          String
+  status               String   @default("Pending")
+  tempStatus           String?  @default("Open")
+  remarks              String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@map("service_booking")
 }
@@ -1105,34 +1106,34 @@ model CustomerComplaintImage {
 }
 
 model JobProcessMenu {
-  id           Int       @id @default(autoincrement())
-  jobCardId    Int       @map("job_card_id")
-  partNo       String    @map("part_no")
-  partName     String    @map("part_name")
-  processName  String    @map("process_name")
-  processOrder String    @map("process_order")
-  teamId       String?   @map("team_id")
-  machineCode  String?   @map("machine_code")
-  machineName  String?   @map("machine_name")
-  days         String?   @map("pm_days")
-  hours         String?   @map("pm_hours")
-  minutes      String?   @map("minutes")
-  settingTime  String?   @map("setting_time")
-  cycleTime    String?   @map("cycle_time")
-  handlingTime String?   @map("handling_time")
-  idleTime     String?   @map("idle_time")
-  
+  id           Int     @id @default(autoincrement())
+  jobCardId    Int     @map("job_card_id")
+  partNo       String  @map("part_no")
+  partName     String  @map("part_name")
+  processName  String  @map("process_name")
+  processOrder String  @map("process_order")
+  teamId       String? @map("team_id")
+  machineCode  String? @map("machine_code")
+  machineName  String? @map("machine_name")
+  days         String? @map("pm_days")
+  hours        String? @map("pm_hours")
+  minutes      String? @map("minutes")
+  settingTime  String? @map("setting_time")
+  cycleTime    String? @map("cycle_time")
+  handlingTime String? @map("handling_time")
+  idleTime     String? @map("idle_time")
+
   // Auditing and Soft-Delete flags
-  isActive     Boolean   @default(true) @map("is_active")
-  deletedAt    DateTime? @map("deleted_at")
-  deletedBy    String?   @map("deleted_by")
-  createdBy    String?   @default("System") @map("created_by")
-  updatedBy    String?   @map("updated_by")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  isActive  Boolean   @default(true) @map("is_active")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?   @map("deleted_by")
+  createdBy String?   @default("System") @map("created_by")
+  updatedBy String?   @map("updated_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
 
   // Relationships
-  jobCard      JobCard   @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+  jobCard JobCard @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
 
   @@unique([jobCardId, partNo, processName, processOrder])
   @@index([jobCardId, partNo, isActive])
@@ -1188,6 +1189,3 @@ model ServiceSpare {
 
   @@map("service_spare")
 }
-
-
-

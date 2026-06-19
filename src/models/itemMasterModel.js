@@ -22,9 +22,11 @@ export const getItemMasters = async (db, { page = 1, limit = 10, search = '' }) 
 
   const unitIds = [...new Set(items.map(i => i.unitId).filter(Boolean))];
   const gradeIds = [...new Set(items.map(i => i.materialGradeId).filter(Boolean))];
+  const qcIds = [...new Set(items.map(i => i.qcTypeId).filter(Boolean))];
 
   let uomMap = {};
   let gradeMap = {};
+  let qcMap = {};
 
   if (unitIds.length > 0) {
     const uomRows = await db.referenceMaster.findMany({
@@ -42,18 +44,38 @@ export const getItemMasters = async (db, { page = 1, limit = 10, search = '' }) 
     gradeMap = Object.fromEntries(gradeRows.map(r => [r.id, r.description]));
   }
 
+  if (qcIds.length > 0) {
+    const qcRows = await db.referenceMaster.findMany({
+      where: { id: { in: qcIds } },
+      select: { id: true, description: true, code: true },
+    });
+    qcMap = Object.fromEntries(qcRows.map(r => [r.id, r.description || r.code]));
+  }
+
   const data = items.map(i => ({
     ...i,
     uom: i.unitId ? (uomMap[i.unitId] ?? '') : '',
     materialGradeName: i.materialGradeId ? (gradeMap[i.materialGradeId] ?? '') : '',
+    qcTypeName: i.qcTypeId ? (qcMap[i.qcTypeId] ?? '') : '',
     hasImage: !!i.imageMimeType,
     hasPdf: !!i.pdfMimeType,
   }));
   return { data, total };
 };
 
-export const getItemMasterById = (db, id) =>
-  db.itemMaster.findUnique({ where: { id } });
+export const getItemMasterById = async (db, id) => {
+  const item = await db.itemMaster.findUnique({ where: { id } });
+  if (item && item.qcTypeId) {
+    const ref = await db.referenceMaster.findUnique({
+      where: { id: item.qcTypeId },
+      select: { description: true, code: true }
+    });
+    if (ref) {
+      item.qcTypeName = ref.description || ref.code;
+    }
+  }
+  return item;
+};
 
 export const createItemMaster = (db, data) =>
   db.itemMaster.create({ data });

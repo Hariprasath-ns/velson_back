@@ -1,5 +1,5 @@
 export const getAll = async (db) => {
-  return db.serviceSpare.findMany({ orderBy: { createdAt: 'desc' } });
+  return db.serviceSpare.findMany({ orderBy: { createdAt: 'asc' } });
 };
 
 export const create = async (db, data) => {

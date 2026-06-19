@@ -49,3 +49,71 @@ export const updateUser = (db, id, data) => {
 
 export const deleteUser = (db, id) =>
   db.user.delete({ where: { id } });
+
+export const getUserPermissions = (db, userId) =>
+  db.userPermission.findMany({
+    where: { userId },
+  });
+
+export const updateUserPermissions = async (db, userId, permissions) => {
+  return db.$transaction(async (tx) => {
+    // Delete existing custom permissions for this user
+    await tx.userPermission.deleteMany({
+      where: { userId },
+    });
+    
+    // Add new ones
+    if (permissions && permissions.length > 0) {
+      const data = permissions.map((p) => ({
+        userId,
+        module: p.module,
+        canDisplay: !!p.canDisplay,
+        canSave: !!p.canSave,
+        canEdit: !!p.canEdit,
+        canDelete: !!p.canDelete,
+        canPrint: !!p.canPrint,
+      }));
+      await tx.userPermission.createMany({
+        data,
+      });
+    }
+
+    return tx.userPermission.findMany({
+      where: { userId },
+    });
+  });
+};
+
+export const getRolePermissions = (db, role) =>
+  db.rolePermission.findMany({
+    where: { role },
+  });
+
+export const updateRolePermissions = async (db, role, permissions) => {
+  return db.$transaction(async (tx) => {
+    // Delete existing custom permissions for this role
+    await tx.rolePermission.deleteMany({
+      where: { role },
+    });
+    
+    // Add new ones
+    if (permissions && permissions.length > 0) {
+      const data = permissions.map((p) => ({
+        role,
+        module: p.module,
+        canDisplay: !!p.canDisplay,
+        canSave: !!p.canSave,
+        canEdit: !!p.canEdit,
+        canDelete: !!p.canDelete,
+        canPrint: !!p.canPrint,
+      }));
+      await tx.rolePermission.createMany({
+        data,
+      });
+    }
+
+    return tx.rolePermission.findMany({
+      where: { role },
+    });
+  });
+};

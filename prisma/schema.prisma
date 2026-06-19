@@ -8,25 +8,74 @@ datasource db {
 }
 
 model User {
-  id          Int             @id @default(autoincrement())
-  name        String
-  email       String          @unique
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  credentials UserCredential?
+  id            Int              @id @default(autoincrement())
+  name          String
+  email         String           @unique
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  credentials   UserCredential?
+  permissions   UserPermission[]
+  refreshTokens RefreshToken[]
 }
 
 model UserCredential {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique
-  username  String   @unique
-  password  String
-  role      String   @default("user")
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             Int       @id @default(autoincrement())
+  userId         Int       @unique
+  username       String    @unique
+  password       String
+  role           String    @default("user")
+  isActive       Boolean   @default(true)
+  failedAttempts Int       @default(0)
+  lockoutUntil   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model UserPermission {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  module     String   // e.g. "company-master"
+  canDisplay Boolean  @default(false)
+  canSave    Boolean  @default(false)
+  canEdit    Boolean  @default(false)
+  canDelete  Boolean  @default(false)
+  canPrint   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, module])
+  @@map("user_permission")
+}
+
+model RolePermission {
+  id         Int      @id @default(autoincrement())
+  role       String   // e.g. "ACCOUNTS", "PURCHASE"
+  module     String   // e.g. "company-master"
+  canDisplay Boolean  @default(false)
+  canSave    Boolean  @default(false)
+  canEdit    Boolean  @default(false)
+  canDelete  Boolean  @default(false)
+  canPrint   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([role, module])
+  @@map("role_permission")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_token")
+}
+
 
 model ReferenceType {
   id               Int               @id @default(autoincrement())

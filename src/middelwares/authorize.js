@@ -7,7 +7,9 @@ export const authorize = (...roles) => (req, res, next) => {
   if (!req.user) {
     throw new UnauthorizedError("User is not authenticated", ErrorCodes.UNAUTHORIZED);
   }
-  if (!roles.includes(req.user.role)) {
+  const userRoleUpper = (req.user.role || "").toUpperCase();
+  const allowedRolesUpper = roles.map(r => r.toUpperCase());
+  if (!allowedRolesUpper.includes(userRoleUpper)) {
     throw new ForbiddenError("Forbidden: insufficient permissions", ErrorCodes.FORBIDDEN);
   }
   next();

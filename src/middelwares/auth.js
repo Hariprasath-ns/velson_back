@@ -40,7 +40,10 @@ export const authenticate = (req, res, next) => {
     req.user = decoded; // { id, email, role }
     next();
   } catch (err) {
-    throw new UnauthorizedError("Authorization token is invalid or expired", ErrorCodes.TOKEN_INVALID);
+    if (err.name === "TokenExpiredError") {
+      throw new UnauthorizedError("Authorization token is expired", ErrorCodes.TOKEN_EXPIRED);
+    }
+    throw new UnauthorizedError("Authorization token is invalid", ErrorCodes.TOKEN_INVALID);
   }
 };
 

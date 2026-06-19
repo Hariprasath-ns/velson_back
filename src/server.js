@@ -10,6 +10,8 @@ import { authenticate } from "./middelwares/auth.js";
 import { requestIdMiddleware, logger } from "./utils/logger.js";
 import { notFoundMiddleware } from "./middelwares/notFoundMiddleware.js";
 import { errorMiddleware } from "./middelwares/errorMiddleware.js";
+import { apiLimiter } from "./middelwares/rateLimiter.js";
+import { authorizePermission } from "./middelwares/authorizePermission.js";
 
 import authRoute from "./routes/authRoute.js";
 import userRoute from "./routes/userRoute.js";
@@ -60,11 +62,17 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(cors());
 
+// Rate limit all API requests
+app.use("/api", apiLimiter);
+
 // Public route — no token required
 app.use("/api/auth", authRoute);
 
 // All routes below this point require a valid JWT
 app.use("/api", authenticate);
+
+// Enforce module access permissions globally
+app.use("/api", authorizePermission);
 
 app.use("/api", userRoute);
 app.use("/api", referenceMasterRoute);

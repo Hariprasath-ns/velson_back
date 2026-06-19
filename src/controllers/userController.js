@@ -120,3 +120,74 @@ export const deleteUser = async (req, res) => {
     throw err;
   }
 };
+
+export const getUserPermissions = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const permissions = await UserModel.getUserPermissions(req.db, id);
+    res.json({ success: true, data: permissions });
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const updateUserPermissions = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { permissions } = req.body;
+    const updated = await UserModel.updateUserPermissions(req.db, id, permissions);
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getRolePermissions = async (req, res) => {
+  try {
+    const { roleName } = req.params;
+    const permissions = await UserModel.getRolePermissions(req.db, roleName);
+    res.json({ success: true, data: permissions });
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const updateRolePermissions = async (req, res) => {
+  try {
+    const { roleName } = req.params;
+    const { permissions } = req.body;
+    const updated = await UserModel.updateRolePermissions(req.db, roleName, permissions);
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getRolesList = async (req, res) => {
+  try {
+    const roles = [
+      "ACCOUNTS",
+      "ADMIN",
+      "DEPT HEAD",
+      "ERP",
+      "MAINTENANCE",
+      "MANAGER",
+      "OPERATOR",
+      "PRODUCTION",
+      "PRODUCTION - SERVICE HEAD",
+      "PURCHASE",
+      "QUALITY",
+      "Quotation Department",
+      "SPARES",
+      "STORE",
+      "STORE HEAD",
+      "STORE MATERIAL ISSUE",
+      "SUPERVISOR",
+      "TECHNICAL",
+      "TECHNICAL HEAD"
+    ];
+    res.json({ success: true, data: roles });
+  } catch (err) {
+    throw err;
+  }
+};

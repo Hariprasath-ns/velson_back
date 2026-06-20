@@ -29,7 +29,8 @@ export const create = async (req, res) => {
       status,
       selectedParts,
       totalAmount,
-      savedDate
+      savedDate,
+      items
     } = req.body;
 
     if (!serviceJobNo) {
@@ -53,7 +54,8 @@ export const create = async (req, res) => {
       status: status || 'Open',
       selectedParts: Array.isArray(selectedParts) ? selectedParts.map(id => parseInt(id, 10)) : [],
       totalAmount: totalAmount ? parseFloat(totalAmount) : 0,
-      savedDate: savedDate || null
+      savedDate: savedDate || null,
+      items
     });
 
     res.status(201).json({ success: true, data: record });
@@ -82,7 +84,8 @@ export const update = async (req, res) => {
       status,
       selectedParts,
       totalAmount,
-      savedDate
+      savedDate,
+      items
     } = req.body;
 
     const record = await Model.update(req.db, id, {
@@ -102,7 +105,8 @@ export const update = async (req, res) => {
       status: status || 'Open',
       selectedParts: Array.isArray(selectedParts) ? selectedParts.map(id => parseInt(id, 10)) : undefined,
       totalAmount: totalAmount ? parseFloat(totalAmount) : undefined,
-      savedDate: savedDate || null
+      savedDate: savedDate || null,
+      items
     });
 
     res.json({ success: true, data: record });

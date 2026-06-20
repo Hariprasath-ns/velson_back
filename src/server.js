@@ -50,6 +50,8 @@ import jobCardRoute from "./routes/jobCardRoute.js";
 import processMasterRoute from "./routes/processMasterRoute.js";
 import customerComplaintRoute from "./routes/customerComplaintRoute.js";
 import machineBreakdownRoute from "./routes/machineBreakdownRoute.js";
+import materialIssueRoute from "./routes/materialIssueRoute.js";
+import stockAdjustmentRoute from "./routes/stockAdjustmentRoute.js";
 
 
 
@@ -110,6 +112,8 @@ app.use("/api", jobCardRoute);
 app.use("/api", processMasterRoute);
 app.use("/api", customerComplaintRoute);
 app.use("/api", machineBreakdownRoute);
+app.use("/api", materialIssueRoute);
+app.use("/api", stockAdjustmentRoute);
 
 
 // 404 handler for unmatched routes

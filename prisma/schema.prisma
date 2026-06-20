@@ -1189,6 +1189,80 @@ model ServiceSpare {
   savedDate           String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+  items               ServiceSpareItem[]
 
   @@map("service_spare")
 }
+
+model StockAdjustment {
+  id          Int      @id @default(autoincrement())
+  partNo      String
+  partName    String?
+  qty         Float    @default(0)
+  uom         String?
+  price       Float    @default(0)
+  amount      Float    @default(0)
+  barcode     String?
+  barcodeType String?  @default("Single") // Single, Multiple
+  type        String   // INWARD, OUTWARD
+  remarks     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?  @default("Admin")
+  updatedBy   String?  @default("Admin")
+
+  @@map("stock_adjustment")
+}
+
+model ServiceSpareItem {
+  id             Int          @id @default(autoincrement())
+  serviceSpareId Int
+  partNo         String
+  partName       String
+  requiredQty    Float
+  issuedQty      Float        @default(0)
+  balanceQty     Float
+  uom            String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  serviceSpare   ServiceSpare @relation(fields: [serviceSpareId], references: [id], onDelete: Cascade)
+
+  @@map("service_spare_item")
+}
+
+model MaterialIssueHeader {
+  id           Int                   @id @default(autoincrement())
+  issueNo      String                @unique
+  issueDate    DateTime              @default(now())
+  department   String?
+  remarks      String?
+  model        String?
+  inchargeName String?
+  receiverName String?
+  customerName String?
+  customerCode String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  details      MaterialIssueDetail[]
+
+  @@map("material_issue_header")
+}
+
+model MaterialIssueDetail {
+  id               Int                 @id @default(autoincrement())
+  headerId         Int
+  partNo           String
+  partName         String
+  barcode          String
+  bomReqQty        Float
+  prevIssuedQty    Float
+  currentIssuedQty Float
+  updatedIssuedQty Float
+  updatedBalQty    Float
+  user             String?
+  createdAt        DateTime            @default(now())
+  header           MaterialIssueHeader @relation(fields: [headerId], references: [id], onDelete: Cascade)
+
+  @@map("material_issue_detail")
+}
+

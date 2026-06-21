@@ -67,7 +67,11 @@ export const getBarcodes = async (db, partNo) => {
     },
     include: {
       grn: {
-        select: { grnbarcode: true }
+        include: {
+          details: {
+            orderBy: { slNo: 'asc' }
+          }
+        }
       }
     }
   });
@@ -83,17 +87,101 @@ export const getBarcodes = async (db, partNo) => {
     }
   });
 
+  const items = await db.itemMaster.findMany({
+    select: { partNo: true, barcodeType: true },
+  });
+  const barcodeTypeMap = {};
+  items.forEach(item => {
+    if (item.partNo) {
+      barcodeTypeMap[item.partNo] = item.barcodeType || 'Single';
+    }
+  });
+
+  const issuedDetails = await db.materialIssueDetail.findMany({
+    where: {
+      partNo: {
+        equals: partNo,
+        mode: 'insensitive'
+      }
+    },
+    select: { barcode: true }
+  });
+  const issuedBarcodes = new Set(issuedDetails.map(id => id.barcode.toLowerCase()));
+
+  const getOffsetBarcode = (grnbarcode, offset) => {
+    if (!grnbarcode) return '';
+    const numericPart = grnbarcode.match(/\d+$/);
+    if (numericPart) {
+      const numStr = numericPart[0];
+      const prefix = grnbarcode.substring(0, grnbarcode.length - numStr.length);
+      const baseNum = parseInt(numStr, 10);
+      const nextNum = baseNum + offset;
+      const paddedNum = String(nextNum).padStart(numStr.length, '0');
+      return `${prefix}${paddedNum}`;
+    }
+    return offset > 0 ? `${grnbarcode}-${offset}` : grnbarcode;
+  };
+
   const merged = [];
+
   grnBarcodes.forEach(g => {
     if (g.grn && g.grn.grnbarcode) {
-      merged.push({
-        source: 'grn',
-        id: g.id,
-        barcode: g.grn.grnbarcode,
-        stockQty: g.stockQty,
-        rate: g.unitPrice || 0,
-        uom: g.unit || 'Nos'
-      });
+      // Calculate offset of this detail record within the GRN
+      let offset = 0;
+      for (const d of g.grn.details) {
+        if (d.id === g.id) {
+          break;
+        }
+        const type = (barcodeTypeMap[d.itemCode] || 'Single').toLowerCase();
+        if (type === 'multiple') {
+          offset += Math.floor(d.qty || 0);
+        } else {
+          offset += 1;
+        }
+      }
+
+      const itemStartBarcode = getOffsetBarcode(g.grn.grnbarcode, offset);
+      const itemBarcodeType = (barcodeTypeMap[g.itemCode] || 'Single').toLowerCase();
+
+      if (itemBarcodeType === 'multiple') {
+        const totalQty = Math.floor(g.qty || 0);
+        const numericPart = itemStartBarcode.match(/\d+$/);
+        for (let j = 0; j < totalQty; j++) {
+          let bc = '';
+          if (numericPart) {
+            const numStr = numericPart[0];
+            const prefix = itemStartBarcode.substring(0, itemStartBarcode.length - numStr.length);
+            const baseNum = parseInt(numStr, 10);
+            const nextNum = baseNum + j;
+            const paddedNum = String(nextNum).padStart(numStr.length, '0');
+            bc = `${prefix}${paddedNum}`;
+          } else {
+            bc = j === 0 ? itemStartBarcode : `${itemStartBarcode}-${j}`;
+          }
+
+          if (!issuedBarcodes.has(bc.toLowerCase())) {
+            merged.push({
+              source: 'grn',
+              id: g.id,
+              barcode: bc,
+              stockQty: 1,
+              rate: g.unitPrice || 0,
+              uom: g.unit || 'Nos'
+            });
+          }
+        }
+      } else {
+        if (!issuedBarcodes.has(itemStartBarcode.toLowerCase())) {
+          merged.push({
+            source: 'grn',
+            id: g.id,
+            barcode: itemStartBarcode,
+            stockQty: g.stockQty,
+            rate: g.unitPrice || 0,
+            uom: g.unit || 'Nos'
+          });
+        }
+      }
     }
   });
 

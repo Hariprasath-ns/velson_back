@@ -770,6 +770,7 @@ model GRNDetail {
   finalPrice     Float     @default(0)
   taxPer         Float     @default(0)
   netAmt         Float     @default(0)
+  barcode        String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   grn            GRNMaster @relation(fields: [grnId], references: [id], onDelete: Cascade)

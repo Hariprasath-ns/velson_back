@@ -50,10 +50,70 @@ export const getBOMItems = async (db, servicePartNo, serviceJobNo) => {
     }
   };
 
-  return db.serviceSpareItem.findMany({
+  const items = await db.serviceSpareItem.findMany({
     where: whereClause,
     orderBy: { id: 'asc' }
   });
+
+  // Find the serviceSpare to see if we need to dynamically append the parent servicePartNo
+  const serviceSpare = await db.serviceSpare.findFirst({
+    where: {
+      serviceJobNo: {
+        equals: serviceJobNo,
+        mode: 'insensitive'
+      },
+      ...(servicePartNo ? {
+        servicePartNo: {
+          equals: servicePartNo,
+          mode: 'insensitive'
+        }
+      } : {
+        OR: [
+          { servicePartNo: null },
+          { servicePartNo: "" }
+        ]
+      })
+    }
+  });
+
+  if (serviceSpare && serviceSpare.servicePartNo) {
+    const parts = serviceSpare.servicePartNo.split(' - ');
+    const parentPartNo = parts[0].trim();
+    const parentPartName = parts[1] ? parts[1].trim() : parentPartNo;
+
+    if (parentPartNo) {
+      // Check if the parent part is already in the items list
+      const hasParent = items.some(item => item.partNo.toLowerCase() === parentPartNo.toLowerCase());
+      if (!hasParent) {
+        // Find if a ServiceSpareItem already exists for this parent part but with balanceQty = 0
+        const existingParentItem = await db.serviceSpareItem.findFirst({
+          where: {
+            serviceSpareId: serviceSpare.id,
+            partNo: {
+              equals: parentPartNo,
+              mode: 'insensitive'
+            }
+          }
+        });
+
+        // If it doesn't exist, we append a virtual one so it shows up
+        if (!existingParentItem) {
+          items.push({
+            id: 0, // Virtual ID
+            serviceSpareId: serviceSpare.id,
+            partNo: parentPartNo,
+            partName: parentPartName,
+            requiredQty: 1.0,
+            issuedQty: 0.0,
+            balanceQty: 1.0,
+            uom: 'Nos'
+          });
+        }
+      }
+    }
+  }
+
+  return items;
 };
 
 export const getBarcodes = async (db, partNo) => {
@@ -250,7 +310,7 @@ export const createIssue = async (db, data) => {
 
       // Find and update ServiceSpareItem
       const isUnassigned = (!header.servicePartNo || header.servicePartNo === '(Unassigned)' || header.servicePartNo === 'null');
-      const bomItem = await tx.serviceSpareItem.findFirst({
+      let bomItem = await tx.serviceSpareItem.findFirst({
         where: {
           partNo: {
             equals: detail.partNo,
@@ -275,6 +335,50 @@ export const createIssue = async (db, data) => {
           }
         }
       });
+
+      if (!bomItem) {
+        // If the item doesn't exist, check if detail.partNo matches the parent servicePartNo
+        let parentPartNo = '';
+        let parentPartName = '';
+        if (header.servicePartNo && header.servicePartNo !== '(Unassigned)' && header.servicePartNo !== 'null') {
+          const parts = header.servicePartNo.split(' - ');
+          parentPartNo = parts[0].trim();
+          parentPartName = parts[1] ? parts[1].trim() : parentPartNo;
+        }
+
+        if (parentPartNo && detail.partNo.toLowerCase() === parentPartNo.toLowerCase()) {
+          // Find the serviceSpare record to link the item to
+          const serviceSpare = await tx.serviceSpare.findFirst({
+            where: {
+              serviceJobNo: {
+                equals: header.serviceJobNo,
+                mode: 'insensitive'
+              },
+              servicePartNo: {
+                equals: header.servicePartNo,
+                mode: 'insensitive'
+              }
+            }
+          });
+
+          if (serviceSpare) {
+            // Dynamically create the ServiceSpareItem record
+            const initialRequiredQty = Math.max(1.0, detail.currentIssuedQty);
+            bomItem = await tx.serviceSpareItem.create({
+              data: {
+                serviceSpareId: serviceSpare.id,
+                partNo: detail.partNo,
+                partName: parentPartName || detail.partName,
+                requiredQty: initialRequiredQty,
+                issuedQty: 0.0,
+                balanceQty: initialRequiredQty,
+                uom: detail.uom || 'Nos'
+              }
+            });
+          }
+        }
+      }
+
       if (!bomItem) {
         throw new Error(`BOM item ${detail.partNo} not found for Job ${header.serviceJobNo} and Part ${header.servicePartNo}`);
       }

@@ -1,5 +1,8 @@
 import * as GRNModel from '../models/grnMasterModel.js';
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { eventBus } from '../services/eventBus.js';
+import { SOCKET_EVENTS } from '../utils/socketEvents.js';
+import { getActorContext } from '../utils/actorContext.js';
 
 
 const toFloat = (v) => (v !== '' && v != null ? parseFloat(v) || 0 : 0);
@@ -107,6 +110,34 @@ export const create = async (req, res) => {
     };
 
     const record = await GRNModel.createGRNEntry(req.db, headerData, buildDetailRows(items));
+
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.GRN_CREATED, {
+      referenceId: record.id,
+      referenceNumber: record.grnNo,
+      referenceType: "grn",
+      grnNo: record.grnNo,
+      poNo: record.poNo || "N/A",
+      userId: req.user?.id,
+      actorContext
+    });
+
+    if (record.details && record.details.length > 0) {
+      for (const detail of record.details) {
+        if (detail.barcode) {
+          eventBus.publish(SOCKET_EVENTS.BARCODE_CREATED, {
+            referenceId: detail.id,
+            referenceNumber: detail.barcode,
+            referenceType: "barcode",
+            barcode: detail.barcode,
+            partNo: detail.itemCode,
+            userId: req.user?.id,
+            actorContext
+          });
+        }
+      }
+    }
+
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
@@ -160,7 +191,46 @@ export const update = async (req, res) => {
       updatedBy:      updatedBy       || 'Admin',
     };
 
+    const original = await GRNModel.getGRNEntryById(req.db, id);
     const record = await GRNModel.updateGRNEntry(req.db, id, headerData, buildDetailRows(items));
+
+    const actorContext = await getActorContext(req);
+    if (original && original.status !== record.status && record.status === 'Completed') {
+      eventBus.publish(SOCKET_EVENTS.GRN_COMPLETED, {
+        referenceId: record.id,
+        referenceNumber: record.grnNo,
+        referenceType: "grn",
+        grnNo: record.grnNo,
+        userId: req.user?.id,
+        actorContext
+      });
+    } else {
+      eventBus.publish(SOCKET_EVENTS.GRN_UPDATED, {
+        referenceId: record.id,
+        referenceNumber: record.grnNo,
+        referenceType: "grn",
+        grnNo: record.grnNo,
+        userId: req.user?.id,
+        actorContext
+      });
+    }
+
+    if (record.details && record.details.length > 0) {
+      for (const detail of record.details) {
+        if (detail.barcode) {
+          eventBus.publish(SOCKET_EVENTS.BARCODE_CREATED, {
+            referenceId: detail.id,
+            referenceNumber: detail.barcode,
+            referenceType: "barcode",
+            barcode: detail.barcode,
+            partNo: detail.itemCode,
+            userId: req.user?.id,
+            actorContext
+          });
+        }
+      }
+    }
+
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {

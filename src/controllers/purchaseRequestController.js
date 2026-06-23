@@ -1,5 +1,8 @@
 import * as PRModel from '../models/purchaseRequestModel.js';
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { eventBus } from '../services/eventBus.js';
+import { SOCKET_EVENTS } from '../utils/socketEvents.js';
+import { getActorContext } from '../utils/actorContext.js';
 
 
 const toFloat = (v) => (v !== '' && v != null ? parseFloat(v) || 0 : 0);
@@ -84,6 +87,18 @@ export const create = async (req, res) => {
     };
 
     const record = await PRModel.createPurchaseRequest(req.db, headerData, buildDetailRows(items));
+
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.PURCHASE_REQUEST_CREATED, {
+      referenceId: record.id,
+      referenceNumber: record.prNo,
+      referenceType: "purchase-request",
+      prNo: record.prNo,
+      createdBy: record.createdBy || 'Admin',
+      userId: req.user?.id,
+      actorContext
+    });
+
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
@@ -125,7 +140,21 @@ export const update = async (req, res) => {
       updatedBy:        updatedBy        || 'Admin',
     };
 
+    const original = await PRModel.getPurchaseRequestById(req.db, id);
     const record = await PRModel.updatePurchaseRequest(req.db, id, headerData, buildDetailRows(items));
+
+    const actorContext = await getActorContext(req);
+    if (original && original.status !== record.status && record.status === 'Approved') {
+      eventBus.publish(SOCKET_EVENTS.PURCHASE_REQUEST_APPROVED, {
+        referenceId: record.id,
+        referenceNumber: record.prNo,
+        referenceType: "purchase-request",
+        prNo: record.prNo,
+        userId: req.user?.id,
+        actorContext
+      });
+    }
+
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {

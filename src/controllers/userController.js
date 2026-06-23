@@ -1,6 +1,10 @@
 import bcrypt from "bcryptjs";
 import * as UserModel from "../models/userModel.js";
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { sendToRoleRoom, sendToUserRoom } from "../services/socketService.js";
+import { SOCKET_EVENTS } from "../utils/socketEvents.js";
+import { eventBus } from "../services/eventBus.js";
+import { getActorContext } from "../utils/actorContext.js";
 
 
 export const getUsers = async (req, res) => {
@@ -39,6 +43,18 @@ export const createUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await UserModel.createUser(req.db, { name, email, password: hashedPassword, role });
+
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.USER_CREATED, {
+      referenceId: user.id,
+      referenceNumber: user.email,
+      referenceType: "user",
+      name: user.name,
+      email: user.email,
+      userId: req.user?.id,
+      actorContext
+    });
+
     res.status(201).json({
       db: req.dbName,
       data: {
@@ -71,7 +87,7 @@ export const updateUser = async (req, res) => {
       if (isActive === false) {
         throw new BadRequestError("You cannot deactivate your own account.");
       }
-      if (role && role !== "admin") {
+      if (role && role.toLowerCase() !== "admin") {
         throw new BadRequestError("You cannot change your own role from admin.");
       }
     }
@@ -82,6 +98,18 @@ export const updateUser = async (req, res) => {
     const user = await UserModel.updateUser(req.db, id, {
       name, email, password: hashedPassword, role, isActive,
     });
+
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.USER_UPDATED, {
+      referenceId: user.id,
+      referenceNumber: user.email,
+      referenceType: "user",
+      name: user.name,
+      email: user.email,
+      userId: req.user?.id,
+      actorContext
+    });
+
     res.json({
       db: req.dbName,
       data: {
@@ -113,6 +141,18 @@ export const deleteUser = async (req, res) => {
     }
 
     await UserModel.deleteUser(req.db, id);
+
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.USER_DELETED, {
+      referenceId: targetUser.id,
+      referenceNumber: targetUser.email,
+      referenceType: "user",
+      name: targetUser.name,
+      email: targetUser.email,
+      userId: req.user?.id,
+      actorContext
+    });
+
     res.status(204).send();
   } catch (err) {
     if (err.code === "P2025")
@@ -136,6 +176,21 @@ export const updateUserPermissions = async (req, res) => {
     const id = parseInt(req.params.id);
     const { permissions } = req.body;
     const updated = await UserModel.updateUserPermissions(req.db, id, permissions);
+    
+    // Send socket event to trigger real-time DB sync on the client
+    sendToUserRoom(id, SOCKET_EVENTS.PERMISSION_UPDATED, { userId: id });
+
+    const user = await UserModel.getUserById(req.db, id);
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.PERMISSION_UPDATED, {
+      referenceId: id,
+      referenceNumber: user?.email || String(id),
+      referenceType: "user-permission",
+      name: user?.name || "User",
+      userId: req.user?.id,
+      actorContext
+    });
+
     res.json({ success: true, data: updated });
   } catch (err) {
     throw err;
@@ -157,6 +212,19 @@ export const updateRolePermissions = async (req, res) => {
     const { roleName } = req.params;
     const { permissions } = req.body;
     const updated = await UserModel.updateRolePermissions(req.db, roleName, permissions);
+    
+    // Send socket event to trigger real-time DB sync on the clients of this role
+    sendToRoleRoom(roleName, SOCKET_EVENTS.PERMISSION_UPDATED, { role: roleName });
+
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.ROLE_UPDATED, {
+      referenceNumber: roleName,
+      referenceType: "role",
+      role: roleName,
+      userId: req.user?.id,
+      actorContext
+    });
+
     res.json({ success: true, data: updated });
   } catch (err) {
     throw err;

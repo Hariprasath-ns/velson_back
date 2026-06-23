@@ -1,5 +1,8 @@
 import * as JobCardModel from '../models/jobCardModel.js';
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { eventBus } from '../services/eventBus.js';
+import { SOCKET_EVENTS } from '../utils/socketEvents.js';
+import { getActorContext } from '../utils/actorContext.js';
 
 
 const toFloat = (v) => (v !== '' && v != null ? parseFloat(v) || 0 : 0);
@@ -85,6 +88,18 @@ export const create = async (req, res) => {
     };
 
     const record = await JobCardModel.createJobCard(req.db, headerData, buildDetailRows(lineItems));
+
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.JOBCARD_CREATED, {
+      referenceId: record.id,
+      referenceNumber: record.jobNo,
+      referenceType: "jobcard",
+      jobNo: record.jobNo,
+      model: record.model || "N/A",
+      userId: req.user?.id,
+      actorContext
+    });
+
     res.status(201).json({ success: true, data: mapResponse(record) });
   } catch (err) {
     if (err.code === 'P2002') {
@@ -124,8 +139,33 @@ export const update = async (req, res) => {
       ...(selectedCustomers !== undefined && { selectedCustomers: selectedCustomers || null }),
     };
 
+    const original = await JobCardModel.getJobCardById(req.db, id);
     const detailRows = lineItems !== undefined ? buildDetailRows(lineItems) : undefined;
     const record = await JobCardModel.updateJobCard(req.db, id, headerData, detailRows);
+
+    const actorContext = await getActorContext(req);
+    if (original && original.status !== record.status) {
+      if (record.status === 'In Process' || record.status === 'Started') {
+        eventBus.publish(SOCKET_EVENTS.JOBCARD_STARTED, {
+          referenceId: record.id,
+          referenceNumber: record.jobNo,
+          referenceType: "jobcard",
+          jobNo: record.jobNo,
+          userId: req.user?.id,
+          actorContext
+        });
+      } else if (record.status === 'Completed' || record.status === 'Closed') {
+        eventBus.publish(SOCKET_EVENTS.JOBCARD_COMPLETED, {
+          referenceId: record.id,
+          referenceNumber: record.jobNo,
+          referenceType: "jobcard",
+          jobNo: record.jobNo,
+          userId: req.user?.id,
+          actorContext
+        });
+      }
+    }
+
     res.json({ success: true, data: mapResponse(record) });
   } catch (err) {
     if (err.code === 'P2025') {
@@ -161,6 +201,7 @@ export const updateProcess = async (req, res) => {
       throw new BadRequestError('jobCardId, partNo, and processName are required');
     }
 
+    const beforeJc = await req.db.jobCard.findUnique({ where: { id: parseInt(jobCardId, 10) } });
     const result = await JobCardModel.upsertJobCardProcess(req.db, {
       jobCardId: parseInt(jobCardId, 10),
       partNo,
@@ -174,6 +215,31 @@ export const updateProcess = async (req, res) => {
       remarks: remarks || null,
       notApplicable: !!notApplicable
     });
+    const afterJc = await req.db.jobCard.findUnique({ where: { id: parseInt(jobCardId, 10) } });
+
+    if (beforeJc && afterJc) {
+      const actorContext = await getActorContext(req);
+      if (!beforeJc.workingStartDate && afterJc.workingStartDate) {
+        eventBus.publish(SOCKET_EVENTS.JOBCARD_STARTED, {
+          referenceId: afterJc.id,
+          referenceNumber: afterJc.jobNo,
+          referenceType: "jobcard",
+          jobNo: afterJc.jobNo,
+          userId: req.user?.id,
+          actorContext
+        });
+      }
+      if (!beforeJc.workingEndDate && afterJc.workingEndDate) {
+        eventBus.publish(SOCKET_EVENTS.JOBCARD_COMPLETED, {
+          referenceId: afterJc.id,
+          referenceNumber: afterJc.jobNo,
+          referenceType: "jobcard",
+          jobNo: afterJc.jobNo,
+          userId: req.user?.id,
+          actorContext
+        });
+      }
+    }
 
     res.json({ success: true, data: result });
   } catch (err) {
@@ -188,6 +254,17 @@ export const closeRouteCard = async (req, res) => {
       throw new BadRequestError('Invalid Job Card ID');
     }
     const result = await JobCardModel.closeRouteCard(req.db, id);
+
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.JOBCARD_COMPLETED, {
+      referenceId: result.id,
+      referenceNumber: result.jobNo,
+      referenceType: "jobcard",
+      jobNo: result.jobNo,
+      userId: req.user?.id,
+      actorContext
+    });
+
     res.json({ success: true, data: mapResponse(result) });
   } catch (err) {
     throw err;

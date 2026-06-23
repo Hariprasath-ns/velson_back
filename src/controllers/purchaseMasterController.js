@@ -1,5 +1,8 @@
 import * as POModel from '../models/purchaseMasterModel.js';
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { eventBus } from '../services/eventBus.js';
+import { SOCKET_EVENTS } from '../utils/socketEvents.js';
+import { getActorContext } from '../utils/actorContext.js';
 
 
 export const getDistinctValues = async (req, res) => {
@@ -148,6 +151,18 @@ export const create = async (req, res) => {
     };
 
     const record = await POModel.createPurchaseOrder(req.db, headerData, buildDetailRows(items));
+
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.PURCHASE_ORDER_CREATED, {
+      referenceId: record.id,
+      referenceNumber: record.poNo,
+      referenceType: "purchase-order",
+      poNo: record.poNo,
+      supplierName: record.supplier?.supplierName || record.supplierRefNo || "Supplier",
+      userId: req.user?.id,
+      actorContext
+    });
+
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
@@ -236,7 +251,22 @@ export const update = async (req, res) => {
       updatedBy:      updatedBy      || 'Admin',
     };
 
+    const original = await POModel.getPurchaseOrderById(req.db, id);
     const record = await POModel.updatePurchaseOrder(req.db, id, headerData, buildDetailRows(items));
+
+    const actorContext = await getActorContext(req);
+    if (original && original.status !== record.status && record.status === 'Approved') {
+      eventBus.publish(SOCKET_EVENTS.PURCHASE_ORDER_APPROVED, {
+        referenceId: record.id,
+        referenceNumber: record.poNo,
+        referenceType: "purchase-order",
+        poNo: record.poNo,
+        approvedBy: record.updatedBy || "Admin",
+        userId: req.user?.id,
+        actorContext
+      });
+    }
+
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {

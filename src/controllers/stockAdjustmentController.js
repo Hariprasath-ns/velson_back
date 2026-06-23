@@ -1,5 +1,6 @@
 import * as StockAdjustmentModel from '../models/stockAdjustmentModel.js';
 import { BadRequestError, ValidationError } from "../middelwares/customErrors.js";
+import { getActorContext } from '../utils/actorContext.js';
 
 const validateAdjustment = (adj) => {
   if (!adj.partNo || typeof adj.partNo !== 'string' || !adj.partNo.trim()) {
@@ -50,7 +51,8 @@ export const create = async (req, res) => {
       ? body.map(enrichRecord) 
       : enrichRecord(body);
 
-    const record = await StockAdjustmentModel.createStockAdjustments(req.db, enrichedData);
+    const actorContext = await getActorContext(req);
+    const record = await StockAdjustmentModel.createStockAdjustments(req.db, enrichedData, actorContext);
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     throw err;

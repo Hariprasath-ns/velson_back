@@ -1,6 +1,9 @@
 import * as CustomerComplaintModel from '../models/customerComplaintModel.js';
 import multer from 'multer';
 import { BadRequestError, NotFoundError, ConflictError } from "../middelwares/customErrors.js";
+import { eventBus } from '../services/eventBus.js';
+import { SOCKET_EVENTS } from '../utils/socketEvents.js';
+import { getActorContext } from '../utils/actorContext.js';
 
 const storage = multer.memoryStorage();
 
@@ -106,6 +109,17 @@ export const create = async (req, res) => {
       updatedBy: createdBy || 'Admin'
     });
 
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.COMPLAINT_CREATED, {
+      referenceId: record.id,
+      referenceNumber: record.ccNo,
+      referenceType: "complaint",
+      ccNo: record.ccNo,
+      customerName: record.customerName,
+      userId: req.user?.id,
+      actorContext
+    });
+
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
@@ -131,6 +145,7 @@ export const update = async (req, res) => {
       throw new BadRequestError('customerName is required');
     }
 
+    const original = await CustomerComplaintModel.getComplaintById(req.db, id);
     const record = await CustomerComplaintModel.updateComplaint(req.db, id, {
       ccNo: ccNo || undefined,
       recDate: recDate || null,
@@ -162,6 +177,31 @@ export const update = async (req, res) => {
       vehicleCount: vehicleCount ? String(vehicleCount) : null,
       updatedBy: updatedBy || 'Admin'
     });
+
+    const actorContext = await getActorContext(req);
+    if (original) {
+      if (original.attenderName !== record.attenderName && record.attenderName) {
+        eventBus.publish(SOCKET_EVENTS.COMPLAINT_ASSIGNED, {
+          referenceId: record.id,
+          referenceNumber: record.ccNo,
+          referenceType: "complaint",
+          ccNo: record.ccNo,
+          attenderName: record.attenderName,
+          userId: req.user?.id,
+          actorContext
+        });
+      }
+      if (original.status !== record.status && record.status?.toLowerCase() === 'closed') {
+        eventBus.publish(SOCKET_EVENTS.COMPLAINT_CLOSED, {
+          referenceId: record.id,
+          referenceNumber: record.ccNo,
+          referenceType: "complaint",
+          ccNo: record.ccNo,
+          userId: req.user?.id,
+          actorContext
+        });
+      }
+    }
 
     res.json({ success: true, data: record });
   } catch (err) {

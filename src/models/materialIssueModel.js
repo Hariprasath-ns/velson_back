@@ -1,3 +1,7 @@
+import { ConflictError } from "../middelwares/customErrors.js";
+import { eventBus } from "../services/eventBus.js";
+import { SOCKET_EVENTS } from "../utils/socketEvents.js";
+
 const getFinancialYear = () => {
   const now = new Date();
   const month = now.getMonth() + 1;
@@ -261,9 +265,10 @@ export const getBarcodes = async (db, partNo) => {
   return merged;
 };
 
-export const createIssue = async (db, data) => {
+export const createIssue = async (db, data, userContext = null) => {
   const { header, details } = data;
-  return db.$transaction(async (tx) => {
+  
+  const result = await db.$transaction(async (tx) => {
     // Find or create header
     let headerRecord = await tx.materialIssueHeader.findUnique({
       where: { issueNo: header.issueNo }
@@ -287,25 +292,39 @@ export const createIssue = async (db, data) => {
     const createdDetails = [];
 
     for (const detail of details) {
-      // Deduct stock
+      // Deduct stock with optimistic locking
       if (detail.source === 'grn') {
         const grnDet = await tx.gRNDetail.findUnique({ where: { id: detail.sourceId } });
         if (!grnDet || grnDet.stockQty < detail.currentIssuedQty) {
           throw new Error(`Insufficient GRN stock for barcode ${detail.barcode}. Available: ${grnDet?.stockQty || 0}`);
         }
-        await tx.gRNDetail.update({
-          where: { id: detail.sourceId },
-          data: { stockQty: grnDet.stockQty - detail.currentIssuedQty }
+        
+        const updated = await tx.gRNDetail.updateMany({
+          where: { id: detail.sourceId, version: grnDet.version },
+          data: {
+            stockQty: grnDet.stockQty - detail.currentIssuedQty,
+            version: { increment: 1 }
+          }
         });
+        if (updated.count === 0) {
+          throw new ConflictError(`Stock was modified concurrently. Please reload.`);
+        }
       } else if (detail.source === 'adjustment') {
         const adj = await tx.stockAdjustment.findUnique({ where: { id: detail.sourceId } });
         if (!adj || adj.qty < detail.currentIssuedQty) {
           throw new Error(`Insufficient stock adjustment stock for barcode ${detail.barcode}. Available: ${adj?.qty || 0}`);
         }
-        await tx.stockAdjustment.update({
-          where: { id: detail.sourceId },
-          data: { qty: adj.qty - detail.currentIssuedQty }
+        
+        const updated = await tx.stockAdjustment.updateMany({
+          where: { id: detail.sourceId, version: adj.version },
+          data: {
+            qty: adj.qty - detail.currentIssuedQty,
+            version: { increment: 1 }
+          }
         });
+        if (updated.count === 0) {
+          throw new ConflictError(`Stock was modified concurrently. Please reload.`);
+        }
       }
 
       // Find and update ServiceSpareItem
@@ -389,13 +408,17 @@ export const createIssue = async (db, data) => {
         throw new Error(`Issue quantity of ${newIssuedQty} exceeds required quantity of ${bomItem.requiredQty}`);
       }
 
-      await tx.serviceSpareItem.update({
-        where: { id: bomItem.id },
+      const updatedSpare = await tx.serviceSpareItem.updateMany({
+        where: { id: bomItem.id, version: bomItem.version },
         data: {
           issuedQty: newIssuedQty,
-          balanceQty: newBalanceQty
+          balanceQty: newBalanceQty,
+          version: { increment: 1 }
         }
       });
+      if (updatedSpare.count === 0) {
+        throw new ConflictError(`BOM items were modified concurrently. Please reload.`);
+      }
 
       // Create Issue Detail
       const detailRecord = await tx.materialIssueDetail.create({
@@ -417,4 +440,33 @@ export const createIssue = async (db, data) => {
 
     return { header: headerRecord, details: createdDetails };
   });
+
+  // Post-transaction success: publish business events to Event Bus
+  eventBus.publish(SOCKET_EVENTS.MATERIAL_ISSUE_CREATED, {
+    issueNo: result.header.issueNo,
+    serviceJobNo: header.serviceJobNo,
+    createdBy: userContext?.userName || header.inchargeName || 'Admin',
+    priority: "Success",
+    referenceType: "MaterialIssueHeader",
+    referenceId: result.header.id,
+    referenceNumber: result.header.issueNo,
+    userId: userContext?.userId || null,
+    username: userContext?.email || null,
+    actorContext: userContext
+  });
+
+  for (const det of result.details) {
+    eventBus.publish(SOCKET_EVENTS.STOCK_UPDATED, {
+      partNo: det.partNo,
+      stockQty: det.updatedBalQty,
+      referenceType: "MaterialIssueDetail",
+      referenceId: det.id,
+      referenceNumber: result.header.issueNo,
+      userId: userContext?.userId || null,
+      username: userContext?.email || null,
+      actorContext: userContext
+    });
+  }
+
+  return result;
 };

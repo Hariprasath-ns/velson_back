@@ -166,3 +166,30 @@ export const logout = async (req, res) => {
     throw err;
   }
 };
+
+export const getCurrentUserPermissions = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      throw new UnauthorizedError("Not authenticated", ErrorCodes.UNAUTHORIZED);
+    }
+
+    const rolePermissions = await req.db.rolePermission.findMany({
+      where: { role: user.role },
+    });
+
+    res.json({
+      success: true,
+      permissions: rolePermissions.map(p => ({
+        module: p.module,
+        canDisplay: p.canDisplay,
+        canSave: p.canSave,
+        canEdit: p.canEdit,
+        canDelete: p.canDelete,
+        canPrint: p.canPrint,
+      })),
+    });
+  } catch (err) {
+    throw err;
+  }
+};

@@ -12,6 +12,7 @@ import { notFoundMiddleware } from "./middelwares/notFoundMiddleware.js";
 import { errorMiddleware } from "./middelwares/errorMiddleware.js";
 import { apiLimiter } from "./middelwares/rateLimiter.js";
 import { authorizePermission } from "./middelwares/authorizePermission.js";
+import { dbSelect } from "./middelwares/dbSelect.js";
 
 import authRoute from "./routes/authRoute.js";
 import userRoute from "./routes/userRoute.js";
@@ -52,6 +53,7 @@ import customerComplaintRoute from "./routes/customerComplaintRoute.js";
 import machineBreakdownRoute from "./routes/machineBreakdownRoute.js";
 import materialIssueRoute from "./routes/materialIssueRoute.js";
 import stockAdjustmentRoute from "./routes/stockAdjustmentRoute.js";
+import notificationRoute from "./routes/notificationRoute.js";
 
 
 
@@ -69,6 +71,9 @@ app.use("/api", apiLimiter);
 
 // Public route — no token required
 app.use("/api/auth", authRoute);
+
+// Select DB globally
+app.use("/api", dbSelect);
 
 // All routes below this point require a valid JWT
 app.use("/api", authenticate);
@@ -114,6 +119,7 @@ app.use("/api", customerComplaintRoute);
 app.use("/api", machineBreakdownRoute);
 app.use("/api", materialIssueRoute);
 app.use("/api", stockAdjustmentRoute);
+app.use("/api", notificationRoute);
 
 
 // 404 handler for unmatched routes
@@ -129,6 +135,17 @@ const server = app.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);
   await checkConnections();
 });
+
+// Initialize WebSockets and Event Bus subscribers
+import { initSocket } from "./services/socketService.js";
+import { initNotificationSubscriber } from "./services/notificationSubscriber.js";
+import { initAuditSubscriber } from "./services/auditSubscriber.js";
+import { initDashboardSubscriber } from "./services/dashboardSubscriber.js";
+
+initSocket(server);
+initNotificationSubscriber();
+initAuditSubscriber();
+initDashboardSubscriber();
 
 // Process-level unhandled exception and rejection handlers
 const gracefulShutdown = (signal, code = 0) => {

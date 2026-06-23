@@ -3,6 +3,9 @@ import path from 'path';
 import multer from 'multer';
 import * as ItemMasterModel from '../models/itemMasterModel.js';
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { eventBus } from '../services/eventBus.js';
+import { SOCKET_EVENTS } from '../utils/socketEvents.js';
+import { getActorContext } from '../utils/actorContext.js';
 
 
 const storage = multer.memoryStorage();
@@ -105,6 +108,19 @@ export const create = async (req, res) => {
       throw new BadRequestError('partNo and partName are required');
     }
     const record = await ItemMasterModel.createItemMaster(req.db, buildData(req.body, false));
+
+    const actorContext = await getActorContext(req);
+
+    eventBus.publish(SOCKET_EVENTS.ITEM_CREATED, {
+      referenceId: record.id,
+      referenceNumber: record.partNo,
+      referenceType: "item-master",
+      partNo: record.partNo,
+      partName: record.partName,
+      userId: req.user?.id,
+      actorContext
+    });
+
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
@@ -122,8 +138,34 @@ export const update = async (req, res) => {
     if (!partNo || !partName) {
       throw new BadRequestError('partNo and partName are required');
     }
+    const originalItem = await ItemMasterModel.getItemMasterById(req.db, id);
     const data = buildData(req.body, true);
     const record = await ItemMasterModel.updateItemMaster(req.db, id, data);
+
+    const actorContext = await getActorContext(req);
+
+    eventBus.publish(SOCKET_EVENTS.ITEM_UPDATED, {
+      referenceId: record.id,
+      referenceNumber: record.partNo,
+      referenceType: "item-master",
+      partNo: record.partNo,
+      partName: record.partName,
+      userId: req.user?.id,
+      actorContext
+    });
+
+    if (originalItem && parseFloat(originalItem.purchaseRate) !== parseFloat(record.purchaseRate)) {
+      eventBus.publish(SOCKET_EVENTS.ITEM_PRICE_UPDATED, {
+        referenceId: record.id,
+        referenceNumber: record.partNo,
+        referenceType: "item-master",
+        partNo: record.partNo,
+        rate: record.purchaseRate,
+        userId: req.user?.id,
+        actorContext
+      });
+    }
+
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {
@@ -140,7 +182,22 @@ export const update = async (req, res) => {
 export const remove = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const item = await ItemMasterModel.getItemMasterById(req.db, id);
     await ItemMasterModel.deleteItemMaster(req.db, id);
+
+    if (item) {
+      const actorContext = await getActorContext(req);
+      eventBus.publish(SOCKET_EVENTS.ITEM_DELETED, {
+        referenceId: id,
+        referenceNumber: item.partNo,
+        referenceType: "item-master",
+        partNo: item.partNo,
+        partName: item.partName,
+        userId: req.user?.id,
+        actorContext
+      });
+    }
+
     res.json({ success: true });
   } catch (err) {
     if (err.code === 'P2025') {

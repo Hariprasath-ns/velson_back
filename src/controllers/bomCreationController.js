@@ -1,5 +1,8 @@
 import * as BomModel from '../models/bomCreationModel.js';
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { eventBus } from '../services/eventBus.js';
+import { SOCKET_EVENTS } from '../utils/socketEvents.js';
+import { getActorContext } from '../utils/actorContext.js';
 
 
 export const getAll = async (req, res) => {
@@ -87,6 +90,16 @@ export const update = async (req, res) => {
       status: status || 'Created',
       excelRows: excelRows || null,
       updatedBy: updatedBy || 'Admin',
+    });
+
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.BOM_UPDATED, {
+      referenceId: record.id,
+      referenceNumber: record.bomNo,
+      referenceType: "bom",
+      bomNo: record.bomNo,
+      userId: req.user?.id,
+      actorContext
     });
 
     res.json({ success: true, data: record });

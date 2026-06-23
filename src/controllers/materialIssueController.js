@@ -1,5 +1,6 @@
 import * as Model from '../models/materialIssueModel.js';
 import { BadRequestError } from '../middelwares/customErrors.js';
+import { getActorContext } from '../utils/actorContext.js';
 
 export const getNextNo = async (req, res, next) => {
   try {
@@ -52,9 +53,11 @@ export const createIssue = async (req, res, next) => {
       }
     }
 
-    const record = await Model.createIssue(req.db, { header, details });
+    const actorContext = await getActorContext(req);
+    const record = await Model.createIssue(req.db, { header, details }, actorContext);
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     next(err);
   }
 };
+

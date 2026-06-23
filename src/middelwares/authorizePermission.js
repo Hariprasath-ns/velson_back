@@ -68,7 +68,7 @@ export const getModuleFromPath = (path) => {
   if (cleanPath.startsWith("/api/vehicle-master")) return "vehicle-master";
   if (cleanPath.startsWith("/api/service-booking")) return "booking-entry-new";
   if (cleanPath.startsWith("/api/service-detail")) return "service-details-entry";
-  if (cleanPath.startsWith("/api/service-spare-entry")) return "service-spare-entry";
+  if (cleanPath.startsWith("/api/service-spare")) return "service-spare-entry";
   
   if (cleanPath.startsWith("/api/quotation")) return "quotation-entry";
   if (cleanPath.startsWith("/api/marketing-log")) return "marketing-log";
@@ -87,6 +87,15 @@ export const getModuleFromPath = (path) => {
   if (cleanPath.startsWith("/api/customer-complaint")) return "customer-complaint-entry";
   if (cleanPath.startsWith("/api/machine-breakdown")) return "machine-breakdown";
   if (cleanPath.startsWith("/api/stock-adjustment")) return "stock-management";
+  
+  if (cleanPath.startsWith("/api/material-issue")) return "material-issue";
+  if (cleanPath.startsWith("/api/job-card")) return "job-card-entry";
+  if (cleanPath.startsWith("/api/job-process-menu")) return "process-menu";
+  if (cleanPath.startsWith("/api/generate-part-number")) return "part-number-base";
+  if (cleanPath.startsWith("/api/categories")) return "part-number-base";
+  if (cleanPath.startsWith("/api/subcategories")) return "part-number-base";
+  if (cleanPath.startsWith("/api/prefixes")) return "item-group";
+  if (cleanPath.startsWith("/api/vehicle-service-master")) return "vehicle-service-master";
   
   return null;
 };
@@ -135,16 +144,21 @@ export const authorizePermission = async (req, res, next) => {
     }
 
     // Fallback: Hybrid Access Policy (evaluate role restriction)
-    if (roleUpper === "USER" && HIDDEN_FOR_USER.includes(module)) {
-      throw new ForbiddenError("Forbidden: insufficient permissions", ErrorCodes.FORBIDDEN);
+    if (roleUpper === "USER") {
+      if (HIDDEN_FOR_USER.includes(module)) {
+        throw new ForbiddenError("Forbidden: insufficient permissions", ErrorCodes.FORBIDDEN);
+      }
+      return next();
     }
-    if (roleUpper === "STAFF" && HIDDEN_FOR_STAFF.includes(module)) {
-      throw new ForbiddenError("Forbidden: insufficient permissions", ErrorCodes.FORBIDDEN);
+    if (roleUpper === "STAFF") {
+      if (HIDDEN_FOR_STAFF.includes(module)) {
+        throw new ForbiddenError("Forbidden: insufficient permissions", ErrorCodes.FORBIDDEN);
+      }
+      return next();
     }
 
-    // By default, staff has save/edit/delete/display on their visible modules,
-    // users have save/edit/delete/display on their visible modules
-    next();
+    // For any other role, if no database permissions are configured, they are unauthorized by default
+    throw new ForbiddenError("Forbidden: insufficient permissions", ErrorCodes.FORBIDDEN);
   } catch (err) {
     next(err);
   }

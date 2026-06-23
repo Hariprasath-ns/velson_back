@@ -1,5 +1,8 @@
 import * as MRModel from '../models/materialRequestModel.js';
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { eventBus } from '../services/eventBus.js';
+import { SOCKET_EVENTS } from '../utils/socketEvents.js';
+import { getActorContext } from '../utils/actorContext.js';
 
 
 const toFloat = (v) => (v !== '' && v != null ? parseFloat(v) || 0 : 0);
@@ -85,6 +88,18 @@ export const create = async (req, res) => {
     };
 
     const record = await MRModel.createMaterialRequest(req.db, headerData, buildDetailRows(items));
+
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.MATERIAL_REQUEST_CREATED, {
+      referenceId: record.id,
+      referenceNumber: record.mrNo,
+      referenceType: "material-request",
+      mrNo: record.mrNo,
+      department: record.departmentTo || "N/A",
+      userId: req.user?.id,
+      actorContext
+    });
+
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2002') {
@@ -119,7 +134,21 @@ export const update = async (req, res) => {
       updatedBy:      updatedBy      || 'Admin',
     };
 
+    const original = await MRModel.getMaterialRequestById(req.db, id);
     const record = await MRModel.updateMaterialRequest(req.db, id, headerData, buildDetailRows(items));
+
+    const actorContext = await getActorContext(req);
+    if (original && original.status !== record.status && record.status === 'Approved') {
+      eventBus.publish(SOCKET_EVENTS.MATERIAL_REQUEST_APPROVED, {
+        referenceId: record.id,
+        referenceNumber: record.mrNo,
+        referenceType: "material-request",
+        mrNo: record.mrNo,
+        userId: req.user?.id,
+        actorContext
+      });
+    }
+
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {

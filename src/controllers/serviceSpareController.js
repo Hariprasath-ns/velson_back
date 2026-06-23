@@ -1,5 +1,8 @@
 import * as Model from '../models/serviceSpareModel.js';
 import { BadRequestError, NotFoundError } from "../middelwares/customErrors.js";
+import { eventBus } from '../services/eventBus.js';
+import { SOCKET_EVENTS } from '../utils/socketEvents.js';
+import { getActorContext } from '../utils/actorContext.js';
 
 export const getAll = async (req, res) => {
   try {
@@ -107,6 +110,16 @@ export const update = async (req, res) => {
       totalAmount: totalAmount ? parseFloat(totalAmount) : undefined,
       savedDate: savedDate || null,
       items
+    });
+
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.SERVICE_SPARE_UPDATED, {
+      referenceId: record.id,
+      referenceNumber: record.serviceJobNo,
+      referenceType: "service-spare",
+      serviceJobNo: record.serviceJobNo,
+      userId: req.user?.id,
+      actorContext
     });
 
     res.json({ success: true, data: record });

@@ -1,5 +1,8 @@
 import * as Model from '../models/serviceBookingModel.js';
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { eventBus } from '../services/eventBus.js';
+import { SOCKET_EVENTS } from '../utils/socketEvents.js';
+import { getActorContext } from '../utils/actorContext.js';
 
 
 export const getAll = async (req, res) => {
@@ -42,6 +45,18 @@ export const create = async (req, res) => {
       tempStatus: tempStatus || 'Open',
       remarks: remarks || null
     });
+
+    const actorContext = await getActorContext(req);
+    eventBus.publish(SOCKET_EVENTS.SERVICE_CREATED, {
+      referenceId: record.id,
+      referenceNumber: record.serviceJobNo,
+      referenceType: "service-booking",
+      serviceJobNo: record.serviceJobNo,
+      vehicleNo: record.vehicleNo || "N/A",
+      userId: req.user?.id,
+      actorContext
+    });
+
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     

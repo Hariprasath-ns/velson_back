@@ -1,3 +1,6 @@
+import { eventBus } from "../services/eventBus.js";
+import { SOCKET_EVENTS } from "../utils/socketEvents.js";
+
 const TX_OPTS = { maxWait: 10000, timeout: 20000 };
 
 export const getAllStockAdjustments = (db) =>
@@ -5,14 +8,11 @@ export const getAllStockAdjustments = (db) =>
     orderBy: { createdAt: 'desc' },
   });
 
-export const createStockAdjustments = (db, dataArray) => {
+export const createStockAdjustments = (db, dataArray, userContext = null) => {
   return db.$transaction(async (tx) => {
     // If it's a single object, wrap it in array
     const records = Array.isArray(dataArray) ? dataArray : [dataArray];
     
-    // We can insert them using createMany, or one by one to return them
-    // Since createMany does not return the created records in PostgreSQL/Prisma easily,
-    // let's do a loop or just createMany and then query or just use create loop
     const results = [];
     for (const record of records) {
       const created = await tx.stockAdjustment.create({
@@ -32,8 +32,44 @@ export const createStockAdjustments = (db, dataArray) => {
           updatedBy:   record.createdBy || 'Admin',
         }
       });
+
+      // Register post-commit event publishing
       results.push(created);
     }
+    
+    // Once committed, we trigger Event Bus publishing
+    tx.onCommit?.(async () => {
+      // Handled outside transaction
+    }) || process.nextTick(() => {
+      results.forEach(res => {
+        eventBus.publish(SOCKET_EVENTS.STOCK_ADJUSTED, {
+          partNo: res.partNo,
+          qty: res.qty,
+          uom: res.uom,
+          type: res.type,
+          priority: res.type === "INWARD" ? "Success" : "Warning",
+          referenceType: "StockAdjustment",
+          referenceId: res.id,
+          referenceNumber: res.barcode || String(res.id),
+          userId: userContext?.userId || null,
+          username: userContext?.email || null,
+          actorContext: userContext
+        });
+
+        if (res.type === "INWARD" && res.barcode) {
+          eventBus.publish(SOCKET_EVENTS.BARCODE_CREATED, {
+            referenceId: res.id,
+            referenceNumber: res.barcode,
+            referenceType: "barcode",
+            barcode: res.barcode,
+            partNo: res.partNo,
+            userId: userContext?.userId || null,
+            actorContext: userContext
+          });
+        }
+      });
+    });
+
     return results;
   }, TX_OPTS);
 };

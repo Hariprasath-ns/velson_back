@@ -1,5 +1,8 @@
 import * as Model from '../models/serviceDetailModel.js';
 import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { eventBus } from '../services/eventBus.js';
+import { SOCKET_EVENTS } from '../utils/socketEvents.js';
+import { getActorContext } from '../utils/actorContext.js';
 
 
 export const getAll = async (req, res) => {
@@ -81,6 +84,7 @@ export const update = async (req, res) => {
       checkedAssemblies
     } = req.body;
 
+    const original = await req.db.serviceDetail.findUnique({ where: { id } });
     const record = await Model.update(req.db, id, {
       serviceJobNo,
       customerCode: customerCode || null,
@@ -98,6 +102,28 @@ export const update = async (req, res) => {
       servicePartNo: servicePartNo || null,
       checkedAssemblies: Array.isArray(checkedAssemblies) ? checkedAssemblies.filter(id => id !== null && id !== undefined).map(id => String(id)) : []
     });
+
+    const actorContext = await getActorContext(req);
+    if (original && original.status !== record.status && record.status?.toLowerCase() === 'completed') {
+      eventBus.publish(SOCKET_EVENTS.SERVICE_COMPLETED, {
+        referenceId: record.id,
+        referenceNumber: record.serviceJobNo,
+        referenceType: "service-detail",
+        serviceJobNo: record.serviceJobNo,
+        userId: req.user?.id,
+        actorContext
+      });
+    } else {
+      eventBus.publish(SOCKET_EVENTS.SERVICE_UPDATED, {
+        referenceId: record.id,
+        referenceNumber: record.serviceJobNo,
+        referenceType: "service-detail",
+        serviceJobNo: record.serviceJobNo,
+        userId: req.user?.id,
+        actorContext
+      });
+    }
+
     res.json({ success: true, data: record });
   } catch (err) {
     if (err.code === 'P2025') {

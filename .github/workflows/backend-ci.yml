@@ -3,10 +3,10 @@ name: Backend CI - Build & Push to Docker Hub
 on:
   push:
     branches:
-      - sujeeth_docker_v2
+      - sujeeth_docker_v4
   pull_request:
     branches:
-      - sujeeth_docker_v2
+      - sujeeth_docker_v4
 
 permissions:
   contents: read

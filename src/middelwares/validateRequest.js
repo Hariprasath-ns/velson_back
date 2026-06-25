@@ -28,8 +28,20 @@ export const validateRequest = (schema) => (req, res, next) => {
   }
 
   // Assign validated and sanitized values back to the request object
-  req.body = value.body;
-  req.query = value.query;
-  req.params = value.params;
+  if (value.body !== undefined) {
+    req.body = value.body;
+  }
+  if (value.query !== undefined && req.query) {
+    for (const key of Object.keys(req.query)) {
+      delete req.query[key];
+    }
+    Object.assign(req.query, value.query);
+  }
+  if (value.params !== undefined && req.params) {
+    for (const key of Object.keys(req.params)) {
+      delete req.params[key];
+    }
+    Object.assign(req.params, value.params);
+  }
   next();
 };

@@ -54,6 +54,7 @@ import machineBreakdownRoute from "./routes/machineBreakdownRoute.js";
 import materialIssueRoute from "./routes/materialIssueRoute.js";
 import stockAdjustmentRoute from "./routes/stockAdjustmentRoute.js";
 import notificationRoute from "./routes/notificationRoute.js";
+import deliveryChallanRoute from "./routes/deliveryChallanRoute.js";
 
 
 
@@ -120,6 +121,7 @@ app.use("/api", machineBreakdownRoute);
 app.use("/api", materialIssueRoute);
 app.use("/api", stockAdjustmentRoute);
 app.use("/api", notificationRoute);
+app.use("/api", deliveryChallanRoute);
 
 
 // 404 handler for unmatched routes

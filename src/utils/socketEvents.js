@@ -55,6 +55,13 @@ export const SOCKET_EVENTS = {
   NOTIFICATION_CREATED: "notification.created",
   NOTIFICATION_READ: "notification.read",
 
+  // Machine Breakdown
+  MACHINE_BREAKDOWN_CREATED: "machine-breakdown.created",
+  MACHINE_BREAKDOWN_UPDATED: "machine-breakdown.updated",
+
+  // Delivery Challan
+  DELIVERY_CHALLAN_CREATED: "delivery-challan.created",
+
   // Dashboard
   DASHBOARD_REFRESH: "dashboard.refresh"
 };

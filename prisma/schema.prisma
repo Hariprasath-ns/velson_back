@@ -218,6 +218,7 @@ model ItemMaster {
   purchaseRate           Float?
   marginPercent          Float?
   rate                   Float?
+  labourCharge           Decimal?                @db.Decimal(10, 2)
   currencyId             Int?
   taxId                  Int?
   subGroupId             Int?
@@ -291,6 +292,7 @@ model SupplierMaster {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   purchaseOrders PurchaseMaster[]
+  deliveryChallans DeliveryChallan[]
 
   @@map("supplier_master")
 }
@@ -355,6 +357,7 @@ model CustomerMaster {
   pdfPath        String?
   quotations     QuotationMaster[]
   vehicleMasters VehicleMaster[]
+  deliveryChallans DeliveryChallan[]
 
   @@map("customer_master")
 }
@@ -1371,6 +1374,58 @@ model UserNotificationPreference {
   @@index([userId])
   @@index([configId])
   @@map("user_notification_preference")
+}
+
+model DeliveryChallan {
+  id              Int                     @id @default(autoincrement())
+  dcNo            String                  @unique
+  financialYear   String
+  date            DateTime                @default(now())
+  partyType       String                  // "Customer" or "Supplier"
+  customerId      Int?
+  supplierId      Int?
+  partyName       String
+  address         String?
+  contPerson      String?
+  contactNo       String?
+  gstNo           String?
+  dcType          String                  // e.g. "Sales", "Returnable", etc.
+  vehicleNo       String?
+  driverName      String?
+  desThrough      String?
+  termsOfDelivery String?
+  totalQty        Float                   @default(0)
+  totalAmount     Float                   @default(0)
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  details         DeliveryChallanDetail[]
+
+  customer        CustomerMaster?         @relation(fields: [customerId], references: [id])
+  supplier        SupplierMaster?         @relation(fields: [supplierId], references: [id])
+
+  @@map("delivery_challan")
+}
+
+model DeliveryChallanDetail {
+  id              Int             @id @default(autoincrement())
+  dcId            Int
+  slNo            Int
+  barcode         String?
+  partNo          String
+  partName        String
+  spec            String?
+  brand           String?
+  qty             Float           @default(0)
+  uom             String          @default("PCS")
+  rate            Float           @default(0)
+  amount          Float           @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  dc              DeliveryChallan @relation(fields: [dcId], references: [id], onDelete: Cascade)
+
+  @@map("delivery_challan_detail")
 }
 
 

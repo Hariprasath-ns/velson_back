@@ -1,5 +1,7 @@
 import * as Service from "../services/machineBreakdownService.js";
 import { BadRequestError } from "../middelwares/customErrors.js";
+import { eventBus } from "../services/eventBus.js";
+import { SOCKET_EVENTS } from "../utils/socketEvents.js";
 
 export const getAll = async (req, res) => {
   try {
@@ -28,6 +30,10 @@ export const create = async (req, res) => {
       updatedBy: user,
     };
     const record = await Service.createBreakdown(req.db, data);
+
+    // Publish event
+    eventBus.publish(SOCKET_EVENTS.MACHINE_BREAKDOWN_CREATED, { data: record });
+
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     throw err;
@@ -48,6 +54,10 @@ export const update = async (req, res) => {
     };
 
     const record = await Service.updateBreakdown(req.db, id, data);
+
+    // Publish event
+    eventBus.publish(SOCKET_EVENTS.MACHINE_BREAKDOWN_UPDATED, { data: record });
+
     res.json({ success: true, data: record });
   } catch (err) {
     throw err;

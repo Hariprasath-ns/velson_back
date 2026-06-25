@@ -470,3 +470,103 @@ export const createIssue = async (db, data, userContext = null) => {
 
   return result;
 };
+
+export const getAllIssues = async (db) => {
+  const headers = await db.materialIssueHeader.findMany({
+    include: {
+      details: true
+    },
+    orderBy: { issueDate: 'desc' }
+  });
+
+  return headers.map(h => ({
+    id: h.id,
+    issueNo: h.issueNo,
+    issueDate: h.issueDate,
+    department: h.department,
+    remarks: h.remarks,
+    model: h.model,
+    inchargeName: h.inchargeName,
+    receiverName: h.receiverName,
+    customerName: h.customerName,
+    customerCode: h.customerCode,
+    createdAt: h.createdAt,
+    items: h.details.map(d => ({
+      id: d.id,
+      partNo: d.partNo,
+      partName: d.partName,
+      barcode: d.barcode,
+      qty: d.currentIssuedQty,
+      rate: 0,
+      uom: 'Nos'
+    }))
+  }));
+};
+
+export const getBarcodeDetails = async (db, barcode) => {
+  // 1. Search in GRNDetail
+  const grnDet = await db.gRNDetail.findFirst({
+    where: {
+      barcode: { equals: barcode, mode: 'insensitive' }
+    },
+    include: {
+      grn: true
+    }
+  });
+
+  if (grnDet) {
+    const item = await db.itemMaster.findFirst({
+      where: { partNo: { equals: grnDet.itemCode, mode: 'insensitive' } }
+    });
+    return {
+      partNo: grnDet.itemCode,
+      partName: grnDet.itemName || item?.partName || '',
+      spec: grnDet.description || item?.description || '',
+      brand: item?.brand || '',
+      uom: grnDet.unit || item?.uom || 'PCS',
+      rate: grnDet.unitPrice || item?.rate || item?.purchaseRate || 0,
+      availableStock: grnDet.stockQty,
+      stockLocation: item?.location || '',
+      mGrade: item?.materialGradeName || '',
+      hrc: item?.remark || '',
+      weight: item?.weight || '',
+      barcodeType: item?.barcodeType || 'Single',
+      source: 'grn',
+      sourceId: grnDet.id
+    };
+  }
+
+  // 2. Search in StockAdjustment
+  const adj = await db.stockAdjustment.findFirst({
+    where: {
+      barcode: { equals: barcode, mode: 'insensitive' },
+      type: 'INWARD'
+    }
+  });
+
+  if (adj) {
+    const item = await db.itemMaster.findFirst({
+      where: { partNo: { equals: adj.partNo, mode: 'insensitive' } }
+    });
+    return {
+      partNo: adj.partNo,
+      partName: adj.partName || item?.partName || '',
+      spec: adj.remarks || item?.description || '',
+      brand: item?.brand || '',
+      uom: adj.uom || item?.uom || 'PCS',
+      rate: adj.price || item?.rate || item?.purchaseRate || 0,
+      availableStock: adj.qty,
+      stockLocation: item?.location || '',
+      mGrade: item?.materialGradeName || '',
+      hrc: item?.remark || '',
+      weight: item?.weight || '',
+      barcodeType: adj.barcodeType || item?.barcodeType || 'Single',
+      source: 'adjustment',
+      sourceId: adj.id
+    };
+  }
+
+  return null;
+};
+
+

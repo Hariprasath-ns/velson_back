@@ -16,7 +16,6 @@ const prisma = new PrismaClient({
 });
 
 const REF_TYPE_NAMES = [
-
   "Account Type",
   "App_User",
   "Area",
@@ -80,6 +79,7 @@ const REF_TYPE_NAMES = [
   "Vehicle_Sub_Type",
   "Vehicle_Type",
   "Warranty_Type",
+  "work_type",
   "Supplier_Type",
   "Customer_Type",
   "Requesting_for_purchase",

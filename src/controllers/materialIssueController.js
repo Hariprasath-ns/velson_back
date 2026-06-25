@@ -61,3 +61,30 @@ export const createIssue = async (req, res, next) => {
   }
 };
 
+export const getAllIssues = async (req, res, next) => {
+  try {
+    const data = await Model.getAllIssues(req.db);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getBarcodeDetails = async (req, res, next) => {
+  try {
+    const { barcode } = req.params;
+    if (!barcode) {
+      throw new BadRequestError('barcode is a required parameter');
+    }
+    const data = await Model.getBarcodeDetails(req.db, barcode);
+    if (!data) {
+      return res.status(404).json({ success: false, message: 'Barcode not found' });
+    }
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+

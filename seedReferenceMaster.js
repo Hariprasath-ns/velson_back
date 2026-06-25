@@ -79,6 +79,13 @@ const seedData = [
   { referenceType: "QC_Characteristics_Master", code: "069", description: "LPM", updatedBy: "QCPURCHASE" },
   { referenceType: "QC_Characteristics_Master", code: "070", description: "VALVE", updatedBy: "QCPURCHASE" },
 
+
+  //work_typeHeat
+  { referenceType: "work_type", code: "001", description: "Heat Treatment", updatedBy: "admin" },
+  { referenceType: "work_type", code: "002", description: "Job work", updatedBy: "admin" },
+  { referenceType: "work_type", code: "003", description: "Production", updatedBy: "admin" },
+  { referenceType: "work_type", code: "003", description: "Rework", updatedBy:"admin" },
+  { referenceType: "work_type", code: "003", description: "Sample", updatedBy: "admin" },
   // QC_Check_Method
   { referenceType: "QC_Check_Method", code: "001", description: "Manual", updatedBy: "QUALITY" },
   { referenceType: "QC_Check_Method", code: "002", description: "Visual Check", updatedBy: "QUALITY" },

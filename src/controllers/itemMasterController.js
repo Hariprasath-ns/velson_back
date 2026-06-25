@@ -39,6 +39,7 @@ const buildData = (body, isUpdate = false) => {
     purchaseRate: parseOptFloat(body.purchaseRate),
     marginPercent: parseOptFloat(body.marginPercent),
     rate: parseOptFloat(body.rate),
+    labourCharge: parseOptFloat(body.labourCharge),
     currencyId: parseOptInt(body.currencyId),
     taxId: parseOptInt(body.taxId),
     subGroupId: parseOptInt(body.subGroupId),

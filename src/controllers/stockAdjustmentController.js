@@ -1,6 +1,8 @@
 import * as StockAdjustmentModel from '../models/stockAdjustmentModel.js';
 import { BadRequestError, ValidationError } from "../middelwares/customErrors.js";
 import { getActorContext } from '../utils/actorContext.js';
+import { eventBus } from '../services/eventBus.js';
+import { SOCKET_EVENTS } from '../utils/socketEvents.js';
 
 const validateAdjustment = (adj) => {
   if (!adj.partNo || typeof adj.partNo !== 'string' || !adj.partNo.trim()) {
@@ -53,6 +55,10 @@ export const create = async (req, res) => {
 
     const actorContext = await getActorContext(req);
     const record = await StockAdjustmentModel.createStockAdjustments(req.db, enrichedData, actorContext);
+    
+    // Publish stock adjustment event to trigger real-time updates
+    eventBus.publish(SOCKET_EVENTS.STOCK_ADJUSTED, { data: record });
+
     res.status(201).json({ success: true, data: record });
   } catch (err) {
     throw err;

@@ -10,7 +10,7 @@ const root = path.resolve(__dirname, '..');
 
 const scripts = [
   'seedTaxMaster.js',
-  'seedNotification.js',
+  'seedNotifications.js',
   'seedCustomerMaster.js',      // 5. Seed Customer_Type entries + customer records
   // 'seedPurchaseRequest.js',     // 7. Seed PurchaseRequest + details (main + mock)
   // 'seedPurchaseMaster.js',      // 8. Seed PurchaseMaster (PO) + details (main + mock)

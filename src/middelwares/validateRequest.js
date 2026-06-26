@@ -15,18 +15,15 @@ export const validateRequest = (schema) => (req, res, next) => {
     },
     { abortEarly: false, stripUnknown: true }
   );
-
   if (error) {
     const details = error.details.reduce((acc, detail) => {
-      // Group errors by their path
       const path = detail.path.join(".");
       acc[path] = detail.message;
       return acc;
     }, {});
-    
-    throw new ValidationError("Validation failed", details);
+    const errorsList = error.details.map(d => `${d.path.join('.')} (${d.message})`).join(', ');
+    throw new ValidationError(`Validation failed: ${errorsList}`, details);
   }
-
   // Assign validated and sanitized values back to the request object
   if (value.body !== undefined) {
     req.body = value.body;

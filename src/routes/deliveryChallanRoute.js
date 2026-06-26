@@ -22,10 +22,8 @@ const createDcSchema = Joi.object({
     }),
     customerId: Joi.number().integer().positive().allow(null).optional(),
     supplierId: Joi.number().integer().positive().allow(null).optional(),
-    partyName: Joi.string().trim().required().messages({
-      'any.required': 'partyName is required',
-      'string.empty': 'partyName cannot be empty',
-    }),
+    partyName: Joi.string().trim().optional(),
+    customerName: Joi.string().trim().optional(),
     address: Joi.string().allow('', null).optional(),
     contPerson: Joi.string().allow('', null).optional(),
     contactNo: Joi.string().allow('', null).optional(),
@@ -62,7 +60,14 @@ const createDcSchema = Joi.object({
         amount: Joi.number().min(0).optional(),
         source: Joi.string().allow('', null).optional(),
         sourceId: Joi.number().integer().positive().allow(null).optional(),
-      })
+        heatTreatment: Joi.alternatives().try(Joi.string(), Joi.number()).allow('', null).optional(),
+        mGrade: Joi.alternatives().try(Joi.string(), Joi.number()).allow('', null).optional(),
+        rework: Joi.alternatives().try(Joi.string(), Joi.number()).allow('', null).optional(),
+        hrc: Joi.alternatives().try(Joi.string(), Joi.number()).allow('', null).optional(),
+        weight: Joi.alternatives().try(Joi.string(), Joi.number()).allow('', null).optional(),
+        details: Joi.alternatives().try(Joi.string(), Joi.number()).allow('', null).optional(),
+        workType: Joi.alternatives().try(Joi.string(), Joi.number()).allow('', null).optional(),
+      }).unknown(true)
     ).min(1).required().messages({
       'any.required': 'items list is required',
       'array.min': 'At least one item must be added',

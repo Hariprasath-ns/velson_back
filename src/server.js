@@ -30,6 +30,7 @@ import supplierMasterRoute from "./routes/supplierMasterRoute.js";
 import customerMasterRoute from "./routes/customerMasterRoute.js";
 import vehicleMasterRoute from "./routes/vehicleMasterRoute.js";
 import quotationRoute from "./routes/quotationRoute.js";
+import quotationSalesRoute from "./routes/quotationSalesRoute.js";
 import purchaseRequestRoute from "./routes/purchaseRequestRoute.js";
 import purchaseMasterRoute from "./routes/purchaseMasterRoute.js";
 import gateMasterRoute from "./routes/gateMasterRoute.js";
@@ -55,6 +56,10 @@ import materialIssueRoute from "./routes/materialIssueRoute.js";
 import stockAdjustmentRoute from "./routes/stockAdjustmentRoute.js";
 import notificationRoute from "./routes/notificationRoute.js";
 import deliveryChallanRoute from "./routes/deliveryChallanRoute.js";
+import outsourcePartsRoute from "./routes/outsourcePartsRoute.js";
+import creditSalesRoute from "./routes/creditSalesRoute.js";
+import serviceBillRoute from "./routes/serviceBillRoute.js";
+
 
 
 
@@ -97,6 +102,7 @@ app.use("/api", supplierMasterRoute);
 app.use("/api", customerMasterRoute);
 app.use("/api", vehicleMasterRoute);
 app.use("/api", quotationRoute);
+app.use("/api", quotationSalesRoute);
 app.use("/api", purchaseRequestRoute);
 app.use("/api", purchaseMasterRoute);
 app.use("/api", gateMasterRoute);
@@ -122,6 +128,11 @@ app.use("/api", materialIssueRoute);
 app.use("/api", stockAdjustmentRoute);
 app.use("/api", notificationRoute);
 app.use("/api", deliveryChallanRoute);
+app.use("/api", outsourcePartsRoute);
+app.use("/api", creditSalesRoute);
+app.use("/api", serviceBillRoute);
+
+
 
 
 // 404 handler for unmatched routes

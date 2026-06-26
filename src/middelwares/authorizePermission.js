@@ -88,6 +88,9 @@ export const getModuleFromPath = (path) => {
   if (cleanPath.startsWith("/api/machine-breakdown")) return "machine-breakdown";
   if (cleanPath.startsWith("/api/stock-adjustment")) return "stock-management";
   if (cleanPath.startsWith("/api/delivery-challan")) return "dc-entry";
+  if (cleanPath.startsWith("/api/credit-sales")) return "credit-sales";
+  if (cleanPath.startsWith("/api/service-bill")) return "service-bill-entry";
+
   
   if (cleanPath.startsWith("/api/material-issue")) return "material-issue";
   if (cleanPath.startsWith("/api/job-card")) return "job-card-entry";

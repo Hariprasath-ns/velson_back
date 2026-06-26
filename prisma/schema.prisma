@@ -254,6 +254,7 @@ model ItemMaster {
   purchaseDetails        PurchaseDetail[]
   purchaseRequestDetails PurchaseRequestDetail[]
   quotationDetails       QuotationDetail[]
+  quotationSalesDetails  QuotationSalesDetail[]
 
   @@map("item_master")
 }
@@ -355,9 +356,11 @@ model CustomerMaster {
   pdfData        Bytes?
   pdfMimeType    String?
   pdfPath        String?
-  quotations     QuotationMaster[]
-  vehicleMasters VehicleMaster[]
+  quotations       QuotationMaster[]
+  quotationSales   QuotationSales[]
+  vehicleMasters   VehicleMaster[]
   deliveryChallans DeliveryChallan[]
+  outsourceParts   OutsourceParts[]
 
   @@map("customer_master")
 }
@@ -442,6 +445,65 @@ model QuotationDetail {
   quotation   QuotationMaster @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 
   @@map("quotation_detail")
+}
+
+model QuotationSales {
+  id                Int                    @id @default(autoincrement())
+  quotationNo       String                 @unique
+  financialYear     String
+  customerId        Int
+  customerRef       String?
+  currencyCode      String?                @default("INR")
+  exchangeRate      Float                  @default(1)
+  modelRef          String?
+  taxType           String?
+  quotationDate     DateTime               @default(now())
+  validUntil        DateTime?
+  revisionNo        Int                    @default(0)
+  quotationType     String?
+  discountType      String                 @default("Dis_Per")
+  showTotalsGrid    Boolean                @default(false)
+  specialDiscount   Float                  @default(0)
+  freightAmount     Float                  @default(0)
+  taxPercent        Float                  @default(18)
+  packingForwarding Float                  @default(0)
+  subTotal          Float                  @default(0)
+  taxAmount         Float                  @default(0)
+  totalAmount       Float                  @default(0)
+  paymentTerms      String?
+  status            String                 @default("Draft")
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  documentPath      String?
+  documentData      Bytes?
+  documentMimeType  String?
+  details           QuotationSalesDetail[]
+  customer          CustomerMaster         @relation(fields: [customerId], references: [id])
+
+  @@map("quotation_sales")
+}
+
+model QuotationSalesDetail {
+  id               Int            @id @default(autoincrement())
+  quotationSalesId Int
+  itemId           Int?
+  partNo           String?
+  itemName         String?
+  description      String?
+  hsnCode          String?
+  uom              String?
+  qty              Float          @default(0)
+  unitPrice        Float          @default(0)
+  amount           Float          @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  slNo             Int
+  item             ItemMaster?    @relation(fields: [itemId], references: [id])
+  quotationSales   QuotationSales @relation(fields: [quotationSalesId], references: [id], onDelete: Cascade)
+
+  @@map("quotation_sales_detail")
 }
 
 model PurchaseRequest {
@@ -1421,6 +1483,13 @@ model DeliveryChallanDetail {
   uom             String          @default("PCS")
   rate            Float           @default(0)
   amount          Float           @default(0)
+  heatTreatment   String?
+  mGrade          String?
+  rework          String?
+  hrc             String?
+  weight          String?
+  details         String?
+  workType        String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   dc              DeliveryChallan @relation(fields: [dcId], references: [id], onDelete: Cascade)
@@ -1429,4 +1498,152 @@ model DeliveryChallanDetail {
 }
 
 
+model OutsourceParts {
+  id         Int                    @id @default(autoincrement())
+  dcNo       String
+  dcDate     DateTime               @default(now())
+  customerId Int?
+  partyName  String
+  address    String?
+  createdBy  String?
+  updatedBy  String?
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+  items      OutsourcePartsDetail[]
+  customer   CustomerMaster?        @relation(fields: [customerId], references: [id])
+
+  @@unique([dcNo])
+  @@map("outsource_parts")
+}
+
+model OutsourcePartsDetail {
+  id         Int            @id @default(autoincrement())
+  registerId Int
+  slNo       Int
+  itemName   String
+  entryDate  DateTime       @default(now())
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  register   OutsourceParts @relation(fields: [registerId], references: [id], onDelete: Cascade)
+
+  @@map("outsource_parts_detail")
+}
+
+model CreditSales {
+  id            Int                 @id @default(autoincrement())
+  billNo        String              @unique
+  billDate      DateTime            @default(now())
+  salesAc       String
+  mode          String
+  dcNo          String?
+  dcDate        DateTime?
+  partyName     String
+  address       String?
+  taxType       String
+  deliveryPlace String?
+  deliveryTo    String?
+  stockReduce   String              @default("No")
+  transport     String?
+  remarks       String?
+  totalQty      Float               @default(0)
+  grossAmt      Float               @default(0)
+  discAmt       Float               @default(0)
+  taxableAmt    Float               @default(0)
+  cgst          Float               @default(0)
+  sgst          Float               @default(0)
+  igst          Float               @default(0)
+  totalTax      Float               @default(0)
+  netAmt        Float               @default(0)
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  details       CreditSalesDetail[]
+
+  @@map("credit_sales")
+}
+
+model CreditSalesDetail {
+  id            Int         @id @default(autoincrement())
+  creditSalesId Int
+  slNo          Int
+  barcode       String?
+  partNo        String
+  partName      String
+  specification String?
+  brand         String?
+  uom           String      @default("PCS")
+  qty           Float       @default(0)
+  rate          Float       @default(0)
+  grossAmt      Float       @default(0)
+  discAmt       Float       @default(0)
+  taxable       Float       @default(0)
+  taxPercent    Float       @default(18)
+  netRate       Float       @default(0)
+  netAmt        Float       @default(0)
+  isManual      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  creditSales   CreditSales @relation(fields: [creditSalesId], references: [id], onDelete: Cascade)
+
+  @@map("credit_sales_detail")
+}
+
+model ServiceBill {
+  id              Int               @id @default(autoincrement())
+  refNo           String            @unique
+  billDate        DateTime          @default(now())
+  serviceNo       String
+  partyName       String
+  cusCode         String?
+  address         String?
+  taxType         String
+  serviceJobNo    String?
+  serialNo        String?
+  vehicleCount    String?
+  vehicleNo       String?
+  vehicleModelNo  String?
+  modelSubType    String?
+  vehicleName     String?
+  servicePartNo   String?
+  materialCost    Float             @default(0)
+  labourCharge    Float             @default(0)
+  gstPer          Float             @default(18)
+  gstAmt          Float             @default(0)
+  billAmt         Float             @default(0)
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  items           ServiceBillItem[]
+
+  @@map("service_bill")
+}
+
+model ServiceBillItem {
+  id             Int         @id @default(autoincrement())
+  serviceBillId  Int
+  slNo           Int
+  itemName       String
+  barcode        String?
+  uom            String?
+  qty            Float       @default(0)
+  rate           Float       @default(0)
+  labourCharge   Float       @default(0)
+  totalAmt       Float       @default(0)
+  issueNo        String?
+  jobNo          String?
+  receiver       String?
+  miRe           String?
+  bookingCode    String?
+  vehicleType    String?
+  serviceM       String?
+  mItemNa        String?
+  printOrderNo   String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  serviceBill    ServiceBill @relation(fields: [serviceBillId], references: [id], onDelete: Cascade)
+
+  @@map("service_bill_item")
+}
 

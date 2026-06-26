@@ -8,18 +8,25 @@ const toInt   = (v) => (v !== '' && v != null ? parseInt(v, 10) || null : null);
 
 const buildDetailRows = (items = []) =>
   items.map((item) => ({
-    slNo:        toInt(item.slNo) || 1,
-    barcode:     item.barcode     || null,
-    partNo:      item.partNo      || '',
-    partName:    item.partName    || '',
-    spec:        item.spec        || null,
-    brand:       item.brand       || null,
-    qty:         toFloat(item.qty),
-    uom:         item.uom         || 'PCS',
-    rate:        toFloat(item.rate),
-    amount:      toFloat(item.amount),
-    source:      item.source      || null,
-    sourceId:    item.sourceId ? toInt(item.sourceId) : null,
+    slNo:          toInt(item.slNo) || 1,
+    barcode:       item.barcode     || null,
+    partNo:        item.partNo      || '',
+    partName:      item.partName    || '',
+    spec:          item.spec        || null,
+    brand:         item.brand       || null,
+    qty:           toFloat(item.qty),
+    uom:           item.uom         || '',
+    rate:          toFloat(item.rate),
+    amount:        toFloat(item.amount),
+    source:        item.source      || null,
+    sourceId:      item.sourceId ? toInt(item.sourceId) : null,
+    heatTreatment: item.heatTreatment != null ? String(item.heatTreatment) : null,
+    mGrade:        item.mGrade        != null ? String(item.mGrade)        : null,
+    rework:        item.rework        != null ? String(item.rework)        : null,
+    hrc:           item.hrc           != null ? String(item.hrc)           : null,
+    weight:        item.weight        != null ? String(item.weight)        : null,
+    details:       item.details       != null ? String(item.details)       : null,
+    workType:      item.workType      != null ? String(item.workType)      : null,
   }));
 
 
@@ -35,8 +42,8 @@ export const getNextNo = async (req, res) => {
 export const create = async (req, res) => {
   try {
     const {
-      dcNo, financialYear, date, partyType, customerId, supplierId, partyName,
-      address, contPerson, contactNo, gstNo, dcType, vehicleNo, driverName,
+      dcNo, financialYear, date, partyType, customerId, supplierId, partyName: rawPartyName,
+      customerName, address, contPerson, contactNo, gstNo, dcType, vehicleNo, driverName,
       desThrough, termsOfDelivery, items, createdBy
     } = req.body;
 
@@ -46,8 +53,10 @@ export const create = async (req, res) => {
     if (!partyType || !['Customer', 'Supplier'].includes(partyType)) {
       throw new BadRequestError('partyType must be either Customer or Supplier');
     }
+    
+    const partyName = rawPartyName || customerName;
     if (!partyName) {
-      throw new BadRequestError('partyName is required');
+      throw new BadRequestError('partyName or customerName is required');
     }
     if (!dcType) {
       throw new BadRequestError('dcType is required');

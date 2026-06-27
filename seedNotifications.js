@@ -294,6 +294,14 @@ const notificationConfigs = [
     titleTemplate: "Complaint Resolved",
     messageTemplate: "Customer complaint {{ccNo}} has been marked as Closed.",
     description: "Triggers when a complaint is resolved."
+  },
+  {
+    event: "service-bill.cancel.requested",
+    module: "Service",
+    action: "cancel.requested",
+    titleTemplate: "Service Bill Cancellation Request",
+    messageTemplate: "User {{userName}} has requested cancellation of Service Bill {{refNo}}.",
+    description: "Triggers when a user requests cancellation of a Service Bill."
   }
 ];
 
@@ -325,6 +333,25 @@ async function seed() {
           }
         });
         skipped++;
+      }
+    }
+    
+    // Seed right for service-bill.cancel.requested config
+    const cancelReqConfig = await db.notificationConfig.findUnique({
+      where: { event: "service-bill.cancel.requested" }
+    });
+    if (cancelReqConfig) {
+      const existingRight = await db.notificationRight.findFirst({
+        where: { configId: cancelReqConfig.id, role: "admin" }
+      });
+      if (!existingRight) {
+        await db.notificationRight.create({
+          data: {
+            configId: cancelReqConfig.id,
+            role: "admin"
+          }
+        });
+        console.log("  [+] Created admin right for service-bill.cancel.requested");
       }
     }
     

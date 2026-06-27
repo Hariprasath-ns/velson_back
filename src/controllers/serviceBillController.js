@@ -1,5 +1,8 @@
 import * as Model from '../models/serviceBillModel.js';
 import { BadRequestError, NotFoundError } from "../middelwares/customErrors.js";
+import { getActorContext } from '../utils/actorContext.js';
+import { broadcastEvent } from '../services/socketService.js';
+import { SOCKET_EVENTS } from '../utils/socketEvents.js';
 
 export const getNextRef = async (req, res, next) => {
   try {
@@ -78,5 +81,38 @@ export const remove = async (req, res, next) => {
     } else {
       next(err);
     }
+  }
+};
+
+export const requestCancel = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const actorContext = await getActorContext(req);
+    const data = await Model.requestBillCancellation(req.db, id, actorContext);
+    
+    // Broadcast status change real-time
+    broadcastEvent(SOCKET_EVENTS.SERVICE_BILL_STATUS_UPDATED, { id, status: data.status });
+    
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const approveCancel = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (req.user.role?.toLowerCase() !== 'admin') {
+      throw new BadRequestError('Only administrators can approve cancellation requests');
+    }
+    const actorContext = await getActorContext(req);
+    const data = await Model.approveBillCancellation(req.db, id, actorContext);
+    
+    // Broadcast status change real-time
+    broadcastEvent(SOCKET_EVENTS.SERVICE_BILL_STATUS_UPDATED, { id, status: data.status });
+    
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
   }
 };

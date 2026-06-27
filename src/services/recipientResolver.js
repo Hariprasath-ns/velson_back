@@ -4,7 +4,15 @@ export const resolveRecipients = async (db, configId, eventName, actorUserId = n
     where: { configId }
   });
 
-  const authorizedRoles = rights.map(r => r.role.toUpperCase());
+  const authorizedRoles = rights.flatMap(r => {
+    const role = r.role || "";
+    return [
+      role,
+      role.toLowerCase(),
+      role.toUpperCase(),
+      role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()
+    ];
+  });
   if (authorizedRoles.length === 0) return [];
 
   // 2. Fetch all users who have these roles

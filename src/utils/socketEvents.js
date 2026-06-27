@@ -61,6 +61,10 @@ export const SOCKET_EVENTS = {
 
   // Delivery Challan
   DELIVERY_CHALLAN_CREATED: "delivery-challan.created",
+  
+  // Service Bill Cancellation
+  SERVICE_BILL_CANCEL_REQUESTED: "service-bill.cancel.requested",
+  SERVICE_BILL_STATUS_UPDATED: "service-bill.status.updated",
 
   // Dashboard
   DASHBOARD_REFRESH: "dashboard.refresh"

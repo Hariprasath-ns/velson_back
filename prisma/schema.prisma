@@ -1611,6 +1611,7 @@ model ServiceBill {
   gstPer          Float             @default(18)
   gstAmt          Float             @default(0)
   billAmt         Float             @default(0)
+  status          String            @default("Open")
   createdBy       String?
   updatedBy       String?
   createdAt       DateTime          @default(now())

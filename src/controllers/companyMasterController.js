@@ -2,7 +2,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import multer from 'multer';
 import * as CompanyModel from '../models/companyMasterModel.js';
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middlewares/customErrors.js";
 
 
 const storage = multer.memoryStorage();

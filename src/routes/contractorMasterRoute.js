@@ -1,12 +1,11 @@
 import express from 'express';
 import Joi from 'joi';
-import { dbSelect } from '../middelwares/dbSelect.js';
-import { validateRequest } from '../middelwares/validateRequest.js';
+import { dbSelect } from '../middlewares/dbSelect.js';
+import { validateRequest } from '../middlewares/validateRequest.js';
 import { getAll, getNextCode, create, update, remove } from '../controllers/contractorMasterController.js';
 
 const router = express.Router();
 
-router.use(dbSelect);
 
 // Validation schemas
 const createContractorSchema = Joi.object({

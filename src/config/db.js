@@ -17,8 +17,10 @@ export const neonPrisma = new PrismaClient({
   adapter: new PrismaPg(new pg.Pool(poolOpts(process.env.NEON_DATABASE_URL))),
 });
 
+const dockerUrl = process.env.DOCKER_DATABASE_URL || process.env.DATABASE_URL;
+
 export const dockerPrisma = new PrismaClient({
-  adapter: new PrismaPg(new pg.Pool(poolOpts(process.env.DOCKER_DATABASE_URL))),
+  adapter: new PrismaPg(new pg.Pool(poolOpts(dockerUrl))),
 });
 
 export async function checkConnections() {

@@ -1,6 +1,6 @@
 import * as QuotationSalesModel from '../models/quotationSalesModel.js'
 import multer from 'multer'
-import { BadRequestError, NotFoundError, ConflictError } from "../middelwares/customErrors.js";
+import { BadRequestError, NotFoundError, ConflictError } from "../middlewares/customErrors.js";
 
 const storage = multer.memoryStorage()
 export const upload = multer({
@@ -35,8 +35,10 @@ export const getNextNo = async (req, res) => {
 
 export const getAll = async (req, res) => {
   try {
-    const data = await QuotationSalesModel.getAllQuotations(req.db)
-    res.json({ success: true, data })
+    const page = parseInt(req.query.page, 10) || 1
+    const limit = parseInt(req.query.limit, 10) || 20
+    const result = await QuotationSalesModel.getAllQuotations(req.db, page, limit)
+    res.json({ success: true, ...result })
   } catch (err) {
     throw err;
   }

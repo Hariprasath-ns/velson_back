@@ -1,10 +1,4 @@
-const getFinancialYear = () => {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-  const y1 = month >= 4 ? year : year - 1;
-  return `${String(y1).slice(-2)}-${String(y1 + 1).slice(-2)}`;
-};
+import { getFinancialYear } from "../utils/date.js";
 
 export const getNextMrNo = async (db) => {
   const fy = getFinancialYear();
@@ -25,8 +19,19 @@ export const getNextMrNo = async (db) => {
 
 const MR_INCLUDE = { details: { orderBy: { slNo: 'asc' } } };
 
-export const getAllMaterialRequests = (db) =>
-  db.materialRequest.findMany({ orderBy: { createdAt: 'desc' }, include: MR_INCLUDE });
+export const getAllMaterialRequests = async (db, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [data, total] = await Promise.all([
+    db.materialRequest.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: MR_INCLUDE
+    }),
+    db.materialRequest.count()
+  ]);
+  return { data, total, page, limit };
+};
 
 export const getMaterialRequestById = (db, id) =>
   db.materialRequest.findUnique({ where: { id }, include: MR_INCLUDE });

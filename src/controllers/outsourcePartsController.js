@@ -1,5 +1,5 @@
 import * as OutsourcePartsModel from '../models/outsourcePartsModel.js';
-import { BadRequestError, NotFoundError, ConflictError } from "../middelwares/customErrors.js";
+import { BadRequestError, NotFoundError, ConflictError } from "../middlewares/customErrors.js";
 
 const toInt = (v) => (v !== '' && v != null ? parseInt(v, 10) || null : null);
 

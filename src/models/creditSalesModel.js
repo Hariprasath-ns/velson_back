@@ -15,11 +15,19 @@ export const getNextCreditSalesBillNo = async (db) => {
   return { billNo: '001' };
 };
 
-export const getAllCreditSales = (db) =>
-  db.creditSales.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { details: { orderBy: { slNo: 'asc' } } }
-  });
+export const getAllCreditSales = async (db, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [data, total] = await Promise.all([
+    db.creditSales.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: { details: { orderBy: { slNo: 'asc' } } }
+    }),
+    db.creditSales.count()
+  ]);
+  return { data, total, page, limit };
+};
 
 export const getCreditSaleById = (db, id) =>
   db.creditSales.findUnique({

@@ -1,5 +1,5 @@
 import * as GateModel from '../models/gateMasterModel.js';
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middlewares/customErrors.js";
 
 
 const toFloat = (v) => (v !== '' && v != null ? parseFloat(v) || 0 : 0);
@@ -29,8 +29,10 @@ export const getNextNo = async (req, res) => {
 
 export const getAll = async (req, res) => {
   try {
-    const data = await GateModel.getAllGateEntries(req.db);
-    res.json({ success: true, data });
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const result = await GateModel.getAllGateEntries(req.db, page, limit);
+    res.json({ success: true, ...result });
   } catch (err) {
     
     throw err;

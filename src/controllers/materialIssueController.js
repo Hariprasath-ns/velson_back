@@ -1,5 +1,5 @@
 import * as Model from '../models/materialIssueModel.js';
-import { BadRequestError } from '../middelwares/customErrors.js';
+import { BadRequestError } from '../middlewares/customErrors.js';
 import { getActorContext } from '../utils/actorContext.js';
 
 export const getNextNo = async (req, res, next) => {
@@ -63,8 +63,10 @@ export const createIssue = async (req, res, next) => {
 
 export const getAllIssues = async (req, res, next) => {
   try {
-    const data = await Model.getAllIssues(req.db);
-    res.json({ success: true, data });
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const result = await Model.getAllIssues(req.db, page, limit);
+    res.json({ success: true, ...result });
   } catch (err) {
     next(err);
   }

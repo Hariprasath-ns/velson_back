@@ -3,11 +3,19 @@ const JC_INCLUDE = {
   processMenus: { orderBy: { processOrder: 'asc' } },
 };
 
-export const getAllJobCards = (db) =>
-  db.jobCard.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: JC_INCLUDE,
-  });
+export const getAllJobCards = async (db, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [data, total] = await Promise.all([
+    db.jobCard.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: JC_INCLUDE,
+    }),
+    db.jobCard.count()
+  ]);
+  return { data, total, page, limit };
+};
 
 export const getJobCardById = (db, id) =>
   db.jobCard.findUnique({

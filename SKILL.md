@@ -101,7 +101,7 @@ Ensure all naming conventions (camelCase, PascalCase, table mapping), folder lay
 ## Part 6: Error & Response Guidelines
 
 ### Centralized Error Handling
-* Do not return custom error structures from controllers. Instead, throw instances of custom error classes from `src/middelwares/customErrors.js`:
+* Do not return custom error structures from controllers. Instead, throw instances of custom error classes from `src/middlewares/customErrors.js`:
   * `BadRequestError(message, errorCode, details)` -> 400 Bad Request
   * `UnauthorizedError(message, errorCode)` -> 401 Unauthorized
   * `ForbiddenError(message, errorCode)` -> 403 Forbidden

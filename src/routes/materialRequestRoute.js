@@ -1,9 +1,8 @@
 import express from 'express';
-import { dbSelect } from '../middelwares/dbSelect.js';
+import { dbSelect } from '../middlewares/dbSelect.js';
 import { getNextNo, getAll, getOne, getByNo, create, update, remove } from '../controllers/materialRequestController.js';
 
 const router = express.Router();
-router.use(dbSelect);
 
 router.get('/material-request/next-no', getNextNo);
 router.get('/material-request/by-no/:mrNo', getByNo);

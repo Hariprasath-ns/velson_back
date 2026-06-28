@@ -1,5 +1,5 @@
 import * as Model from '../models/serviceSpareModel.js';
-import { BadRequestError, NotFoundError } from "../middelwares/customErrors.js";
+import { BadRequestError, NotFoundError } from "../middlewares/customErrors.js";
 import { eventBus } from '../services/eventBus.js';
 import { SOCKET_EVENTS } from '../utils/socketEvents.js';
 import { getActorContext } from '../utils/actorContext.js';

@@ -1,10 +1,4 @@
-const getFinancialYear = () => {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-  const y1 = month >= 4 ? year : year - 1;
-  return `${String(y1).slice(-2)}-${String(y1 + 1).slice(-2)}`;
-};
+import { getFinancialYear } from "../utils/date.js";
 
 export const getNextPrNo = async (db) => {
   const fy = getFinancialYear();
@@ -30,11 +24,19 @@ const PR_INCLUDE = {
   requestingForRef: { select: { id: true, code: true, description: true } },
 };
 
-export const getAllPurchaseRequests = (db) =>
-  db.purchaseRequest.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: PR_INCLUDE,
-  });
+export const getAllPurchaseRequests = async (db, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [data, total] = await Promise.all([
+    db.purchaseRequest.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: PR_INCLUDE,
+    }),
+    db.purchaseRequest.count()
+  ]);
+  return { data, total, page, limit };
+};
 
 export const getPurchaseRequestById = (db, id) =>
   db.purchaseRequest.findUnique({

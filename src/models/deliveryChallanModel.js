@@ -102,13 +102,20 @@ export const getRecentDcValues = async (db) => {
   return { vehicles, drivers, desThroughs };
 };
 
-export const getAllDeliveryChallans = async (db) => {
-  return db.deliveryChallan.findMany({
-    include: {
-      details: true,
-    },
-    orderBy: {
-      date: 'desc',
-    },
-  });
+export const getAllDeliveryChallans = async (db, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [data, total] = await Promise.all([
+    db.deliveryChallan.findMany({
+      skip,
+      take: limit,
+      include: {
+        details: true,
+      },
+      orderBy: {
+        date: 'desc',
+      },
+    }),
+    db.deliveryChallan.count()
+  ]);
+  return { data, total, page, limit };
 };

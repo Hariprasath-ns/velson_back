@@ -1,5 +1,5 @@
 import express from 'express';
-import { dbSelect } from '../middelwares/dbSelect.js';
+import { dbSelect } from '../middlewares/dbSelect.js';
 import { 
   getAll, getOne, create, update, remove, 
   upload, uploadFiles, getUploads, 
@@ -8,7 +8,6 @@ import {
 
 const router = express.Router();
 
-router.use(dbSelect);
 
 router.get('/item-master', getAll);
 router.get('/item-master/:id', getOne);

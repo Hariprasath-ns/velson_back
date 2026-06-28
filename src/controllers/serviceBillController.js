@@ -1,5 +1,5 @@
 import * as Model from '../models/serviceBillModel.js';
-import { BadRequestError, NotFoundError } from "../middelwares/customErrors.js";
+import { BadRequestError, NotFoundError, ForbiddenError } from "../middlewares/customErrors.js";
 import { getActorContext } from '../utils/actorContext.js';
 import { broadcastEvent } from '../services/socketService.js';
 import { SOCKET_EVENTS } from '../utils/socketEvents.js';
@@ -15,8 +15,10 @@ export const getNextRef = async (req, res, next) => {
 
 export const getAll = async (req, res, next) => {
   try {
-    const data = await Model.getAllServiceBills(req.db);
-    res.json({ success: true, data });
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const result = await Model.getAllServiceBills(req.db, page, limit);
+    res.json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -103,7 +105,7 @@ export const approveCancel = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (req.user.role?.toLowerCase() !== 'admin') {
-      throw new BadRequestError('Only administrators can approve cancellation requests');
+      throw new ForbiddenError('Only administrators can approve cancellation requests');
     }
     const actorContext = await getActorContext(req);
     const data = await Model.approveBillCancellation(req.db, id, actorContext);

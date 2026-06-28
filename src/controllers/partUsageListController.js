@@ -1,5 +1,5 @@
 import * as PartUsageListModel from '../models/partUsageListModel.js';
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middlewares/customErrors.js";
 
 
 const buildData = (body) => ({

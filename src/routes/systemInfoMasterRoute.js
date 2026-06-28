@@ -1,9 +1,8 @@
 import express from 'express';
-import { dbSelect } from '../middelwares/dbSelect.js';
+import { dbSelect } from '../middlewares/dbSelect.js';
 import { getAll, getById, create, update, remove } from '../controllers/systemInfoMasterController.js';
 
 const router = express.Router();
-router.use(dbSelect);
 
 router.get('/system-info-master', getAll);
 router.get('/system-info-master/:id', getById);

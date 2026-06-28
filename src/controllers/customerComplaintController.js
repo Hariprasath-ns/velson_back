@@ -1,6 +1,6 @@
 import * as CustomerComplaintModel from '../models/customerComplaintModel.js';
 import multer from 'multer';
-import { BadRequestError, NotFoundError, ConflictError } from "../middelwares/customErrors.js";
+import { BadRequestError, NotFoundError, ConflictError } from "../middlewares/customErrors.js";
 import { eventBus } from '../services/eventBus.js';
 import { SOCKET_EVENTS } from '../utils/socketEvents.js';
 import { getActorContext } from '../utils/actorContext.js';
@@ -27,8 +27,10 @@ const getFinancialYear = (date = new Date()) => {
 
 export const getAll = async (req, res) => {
   try {
-    const data = await CustomerComplaintModel.getAllComplaints(req.db);
-    res.json({ success: true, data });
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const result = await CustomerComplaintModel.getAllComplaints(req.db, page, limit);
+    res.json({ success: true, ...result });
   } catch (err) {
     throw err;
   }

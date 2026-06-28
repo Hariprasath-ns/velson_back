@@ -1,5 +1,5 @@
 import * as BomModel from '../models/bomCreationModel.js';
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middlewares/customErrors.js";
 import { eventBus } from '../services/eventBus.js';
 import { SOCKET_EVENTS } from '../utils/socketEvents.js';
 import { getActorContext } from '../utils/actorContext.js';

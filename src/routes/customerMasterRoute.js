@@ -1,10 +1,9 @@
 import express from 'express';
-import { dbSelect } from '../middelwares/dbSelect.js';
+import { dbSelect } from '../middlewares/dbSelect.js';
 import { getAll, getNextCode, create, update, remove, upload, uploadFiles, downloadImage, downloadPdf } from '../controllers/customerMasterController.js';
 
 const router = express.Router();
 
-router.use(dbSelect);
 
 router.get('/customer-master', getAll);
 router.get('/customer-master/next-code', getNextCode);

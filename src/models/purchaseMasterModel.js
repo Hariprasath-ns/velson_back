@@ -1,10 +1,4 @@
-const getFinancialYear = () => {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-  const y1 = month >= 4 ? year : year - 1;
-  return `${String(y1).slice(-2)}-${String(y1 + 1).slice(-2)}`;
-};
+import { getFinancialYear } from "../utils/date.js";
 
 export const getNextPoNo = async (db) => {
   const fy = getFinancialYear();
@@ -23,14 +17,22 @@ export const getNextPoNo = async (db) => {
   return { poNo: `${fy}/PO00001`, financialYear: fy };
 };
 
-export const getAllPurchaseOrders = (db) =>
-  db.purchaseMaster.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: {
-      supplier: { select: { id: true, supplierName: true, sCode: true } },
-      details: { orderBy: { slNo: 'asc' } },
-    },
-  });
+export const getAllPurchaseOrders = async (db, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [data, total] = await Promise.all([
+    db.purchaseMaster.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        supplier: { select: { id: true, supplierName: true, sCode: true } },
+        details: { orderBy: { slNo: 'asc' } },
+      },
+    }),
+    db.purchaseMaster.count()
+  ]);
+  return { data, total, page, limit };
+};
 
 export const getPurchaseOrderById = async (db, id) => {
   const po = await db.purchaseMaster.findUnique({

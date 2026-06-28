@@ -1,5 +1,5 @@
 import * as Model from '../models/systemInfoMasterModel.js';
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middlewares/customErrors.js";
 
 
 const build = (body) => ({

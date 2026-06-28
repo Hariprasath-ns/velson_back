@@ -1,5 +1,5 @@
 import * as ReferenceTypeModel from "../models/referenceTypeModel.js";
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middlewares/customErrors.js";
 
 
 export const getValuesByName = async (req, res) => {

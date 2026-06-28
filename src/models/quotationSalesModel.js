@@ -1,10 +1,4 @@
-const getFinancialYear = () => {
-  const now = new Date()
-  const month = now.getMonth() + 1
-  const year = now.getFullYear()
-  const y1 = month >= 4 ? year : year - 1
-  return `${String(y1).slice(-2)}-${String(y1 + 1).slice(-2)}`
-}
+import { getFinancialYear } from "../utils/date.js";
 
 export const getNextQuotationNo = async (db) => {
   const fy = getFinancialYear()
@@ -23,11 +17,19 @@ export const getNextQuotationNo = async (db) => {
   return { quotationNo: `${fy}/QS00001`, financialYear: fy }
 }
 
-export const getAllQuotations = (db) =>
-  db.quotationSales.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { customer: { select: { id: true, customerName: true, cCode: true } }, details: { orderBy: { slNo: 'asc' } } },
-  })
+export const getAllQuotations = async (db, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [data, total] = await Promise.all([
+    db.quotationSales.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: { customer: { select: { id: true, customerName: true, cCode: true } }, details: { orderBy: { slNo: 'asc' } } },
+    }),
+    db.quotationSales.count()
+  ]);
+  return { data, total, page, limit };
+};
 
 export const getQuotationById = (db, id) =>
   db.quotationSales.findUnique({

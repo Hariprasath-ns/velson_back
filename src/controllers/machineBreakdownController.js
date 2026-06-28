@@ -1,5 +1,5 @@
 import * as Service from "../services/machineBreakdownService.js";
-import { BadRequestError } from "../middelwares/customErrors.js";
+import { BadRequestError } from "../middlewares/customErrors.js";
 import { eventBus } from "../services/eventBus.js";
 import { SOCKET_EVENTS } from "../utils/socketEvents.js";
 

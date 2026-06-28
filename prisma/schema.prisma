@@ -256,6 +256,8 @@ model ItemMaster {
   quotationDetails       QuotationDetail[]
   quotationSalesDetails  QuotationSalesDetail[]
 
+  @@index([partNo, barcodeType])
+  @@index([createdAt])
   @@map("item_master")
 }
 
@@ -295,6 +297,7 @@ model SupplierMaster {
   purchaseOrders PurchaseMaster[]
   deliveryChallans DeliveryChallan[]
 
+  @@index([createdAt])
   @@map("supplier_master")
 }
 
@@ -362,6 +365,7 @@ model CustomerMaster {
   deliveryChallans DeliveryChallan[]
   outsourceParts   OutsourceParts[]
 
+  @@index([createdAt])
   @@map("customer_master")
 }
 
@@ -423,6 +427,9 @@ model QuotationMaster {
   details           QuotationDetail[]
   customer          CustomerMaster    @relation(fields: [customerId], references: [id])
 
+  @@index([createdAt])
+  @@index([status])
+  @@index([customerId])
   @@map("quotation_master")
 }
 
@@ -482,6 +489,9 @@ model QuotationSales {
   details           QuotationSalesDetail[]
   customer          CustomerMaster         @relation(fields: [customerId], references: [id])
 
+  @@index([createdAt])
+  @@index([status])
+  @@index([customerId])
   @@map("quotation_sales")
 }
 
@@ -532,6 +542,8 @@ model PurchaseRequest {
   teamRef          ReferenceMaster?        @relation("PRTeamRef", fields: [teamId], references: [id])
   details          PurchaseRequestDetail[]
 
+  @@index([createdAt])
+  @@index([status])
   @@map("purchase_request")
 }
 
@@ -599,6 +611,9 @@ model PurchaseMaster {
   details         PurchaseDetail[]
   supplier        SupplierMaster?  @relation(fields: [supplierRefNo], references: [sCode])
 
+  @@index([destination, paymentTerms, project, modeOfDespatch, freight])
+  @@index([createdAt])
+  @@index([status])
   @@map("purchase_master")
 }
 
@@ -653,6 +668,8 @@ model GateMaster {
   updatedAt       DateTime     @updatedAt
   details         GateDetail[]
 
+  @@index([createdAt])
+  @@index([status])
   @@map("gate_master")
 }
 
@@ -814,6 +831,8 @@ model GRNMaster {
   updatedAt      DateTime    @updatedAt
   details        GRNDetail[]
 
+  @@index([createdAt])
+  @@index([status])
   @@map("grn_master")
 }
 
@@ -844,6 +863,7 @@ model GRNDetail {
   version        Int       @default(0)
   grn            GRNMaster @relation(fields: [grnId], references: [id], onDelete: Cascade)
 
+  @@index([itemCode, stockQty])
   @@map("grn_detail")
 }
 
@@ -913,6 +933,8 @@ model MaterialRequest {
   updatedAt      DateTime                @updatedAt
   details        MaterialRequestDetail[]
 
+  @@index([createdAt])
+  @@index([status])
   @@map("material_request")
 }
 
@@ -1058,6 +1080,8 @@ model JobCard {
   selfStockIn        Boolean?          @default(false)
   selectedCustomers  Json?
 
+  @@index([createdAt])
+  @@index([status])
   @@map("job_card")
 }
 
@@ -1162,6 +1186,8 @@ model CustomerComplaint {
   updatedAt            DateTime                 @updatedAt
   images               CustomerComplaintImage[]
 
+  @@index([createdAt])
+  @@index([status])
   @@map("customer_complaint")
 }
 
@@ -1317,6 +1343,7 @@ model MaterialIssueHeader {
   updatedAt    DateTime              @updatedAt
   details      MaterialIssueDetail[]
 
+  @@index([createdAt])
   @@map("material_issue_header")
 }
 
@@ -1467,6 +1494,9 @@ model DeliveryChallan {
   customer        CustomerMaster?         @relation(fields: [customerId], references: [id])
   supplier        SupplierMaster?         @relation(fields: [supplierId], references: [id])
 
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([supplierId])
   @@map("delivery_challan")
 }
 
@@ -1560,6 +1590,7 @@ model CreditSales {
   updatedAt     DateTime            @updatedAt
   details       CreditSalesDetail[]
 
+  @@index([createdAt])
   @@map("credit_sales")
 }
 
@@ -1618,6 +1649,8 @@ model ServiceBill {
   updatedAt       DateTime          @updatedAt
   items           ServiceBillItem[]
 
+  @@index([createdAt])
+  @@index([status])
   @@map("service_bill")
 }
 
@@ -1648,3 +1681,58 @@ model ServiceBillItem {
   @@map("service_bill_item")
 }
 
+model IndexCreation {
+  id           Int                     @id @default(autoincrement())
+  date         DateTime                @default(now())
+  indexNo      Int                     @unique
+  model        String
+  modelNo      String
+  fileLocation String?
+  fileName     String?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  excelData    IndexCreationExcelData?
+  imagePath     String?
+  imageData     Bytes?
+  imageMimeType String?
+  createdBy     String?
+  updatedBy     String?
+  uploads       IndexCreationUpload[]
+
+  @@map("index_creation")
+}
+
+model IndexCreationExcelData {
+  id              Int      @id @default(autoincrement())
+  indexCreationId Int      @unique
+  excelData       Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  indexCreation IndexCreation @relation(fields: [indexCreationId], references: [id], onDelete: Cascade)
+
+  @@map("index_creation_excel_data")
+}
+
+model IndexCreationUpload {
+  id              Int           @id @default(autoincrement())
+  indexCreationId Int
+  imagePath       String?
+  updatedBy       String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  imageData       Bytes?
+  imageMimeType   String?
+  indexCreation   IndexCreation @relation(fields: [indexCreationId], references: [id], onDelete: Cascade)
+
+  @@map("index_creation_upload")
+}
+
+model TokenBlacklist {
+  id        Int      @id @default(autoincrement())
+  jti       String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("db_token_blacklist")
+}

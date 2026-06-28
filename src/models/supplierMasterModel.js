@@ -1,5 +1,15 @@
-export const getAllSuppliers = (db) =>
-  db.supplierMaster.findMany({ orderBy: { createdAt: 'asc' } });
+export const getAllSuppliers = async (db, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [data, total] = await Promise.all([
+    db.supplierMaster.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'asc' }
+    }),
+    db.supplierMaster.count()
+  ]);
+  return { data, total, page, limit };
+};
 
 export const getSupplierById = (db, id) =>
   db.supplierMaster.findUnique({ where: { id } });

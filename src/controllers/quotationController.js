@@ -1,6 +1,6 @@
 import * as QuotationModel from '../models/quotationModel.js'
 import multer from 'multer'
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middlewares/customErrors.js";
 
 
 const storage = multer.memoryStorage()
@@ -37,8 +37,10 @@ export const getNextNo = async (req, res) => {
 
 export const getAll = async (req, res) => {
   try {
-    const data = await QuotationModel.getAllQuotations(req.db)
-    res.json({ success: true, data })
+    const page = parseInt(req.query.page, 10) || 1
+    const limit = parseInt(req.query.limit, 10) || 20
+    const result = await QuotationModel.getAllQuotations(req.db, page, limit)
+    res.json({ success: true, ...result })
   } catch (err) {
     
     throw err;

@@ -1,4 +1,4 @@
-import { BadRequestError, NotFoundError } from "../middelwares/customErrors.js";
+import { BadRequestError, NotFoundError } from "../middlewares/customErrors.js";
 import { sendToUserRoom } from "../services/socketService.js";
 import { SOCKET_EVENTS } from "../utils/socketEvents.js";
 
@@ -215,23 +215,15 @@ export const updatePreferences = async (req, res, next) => {
     }
 
     await req.db.$transaction(async (tx) => {
-      for (const p of preferences) {
-        await tx.userNotificationPreference.upsert({
-          where: {
-            userId_configId: {
-              userId,
-              configId: p.configId
-            }
-          },
-          update: {
-            popupEnabled: p.popupEnabled ?? true,
-            bellEnabled: p.bellEnabled ?? true,
-            emailEnabled: p.emailEnabled ?? false,
-            whatsappEnabled: p.whatsappEnabled ?? false,
-            smsEnabled: p.smsEnabled ?? false,
-            muted: p.muted ?? false
-          },
-          create: {
+      // 1. Delete existing preferences for this user
+      await tx.userNotificationPreference.deleteMany({
+        where: { userId }
+      });
+
+      // 2. Insert new preferences in bulk
+      if (preferences.length > 0) {
+        await tx.userNotificationPreference.createMany({
+          data: preferences.map(p => ({
             userId,
             configId: p.configId,
             popupEnabled: p.popupEnabled ?? true,
@@ -240,7 +232,7 @@ export const updatePreferences = async (req, res, next) => {
             whatsappEnabled: p.whatsappEnabled ?? false,
             smsEnabled: p.smsEnabled ?? false,
             muted: p.muted ?? false
-          }
+          }))
         });
       }
     });

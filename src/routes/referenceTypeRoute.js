@@ -1,5 +1,5 @@
 import express from "express";
-import { dbSelect } from "../middelwares/dbSelect.js";
+import { dbSelect } from "../middlewares/dbSelect.js";
 import {
   getAllTypes,
   getTypeById,
@@ -11,7 +11,6 @@ import {
 
 const router = express.Router();
 
-router.use(dbSelect);
 
 router.get("/reference-types", getAllTypes);
 router.get("/reference-types/values/:name", getValuesByName);

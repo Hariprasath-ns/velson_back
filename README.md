@@ -42,7 +42,7 @@ velson_back/
 │   │   └── userController.js   # Request handlers
 │   ├── models/
 │   │   └── userModel.js        # Prisma query layer
-│   └── middelwares/
+│   └── middlewares/
 │       └── dbSelect.js         # Per-request DB selection middleware
 ├── prisma/
 │   ├── schema.prisma           # Database schema

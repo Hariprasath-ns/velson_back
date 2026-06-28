@@ -1,5 +1,5 @@
 import * as MRModel from '../models/materialRequestModel.js';
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middlewares/customErrors.js";
 import { eventBus } from '../services/eventBus.js';
 import { SOCKET_EVENTS } from '../utils/socketEvents.js';
 import { getActorContext } from '../utils/actorContext.js';
@@ -29,8 +29,10 @@ export const getNextNo = async (req, res) => {
 
 export const getAll = async (req, res) => {
   try {
-    const data = await MRModel.getAllMaterialRequests(req.db);
-    res.json({ success: true, data });
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const result = await MRModel.getAllMaterialRequests(req.db, page, limit);
+    res.json({ success: true, ...result });
   } catch (err) {
     throw err;
   }

@@ -1,8 +1,8 @@
 import express from "express";
-import { dbSelect } from "../middelwares/dbSelect.js";
-import { authenticate } from "../middelwares/auth.js";
+import { dbSelect } from "../middlewares/dbSelect.js";
+import { authenticate } from "../middlewares/auth.js";
 import { login, refresh, logout, getCurrentUserPermissions } from "../controllers/authController.js";
-import { loginLimiter } from "../middelwares/rateLimiter.js";
+import { loginLimiter } from "../middlewares/rateLimiter.js";
 
 const router = express.Router();
 

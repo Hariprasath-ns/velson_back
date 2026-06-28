@@ -1,5 +1,5 @@
 import * as Repository from "../repositories/machineBreakdownRepository.js";
-import { BadRequestError, NotFoundError, ConflictError } from "../middelwares/customErrors.js";
+import { BadRequestError, NotFoundError, ConflictError } from "../middlewares/customErrors.js";
 
 export const getAllBreakdowns = async (db) => {
   return Repository.findAll(db);

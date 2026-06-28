@@ -1,7 +1,7 @@
 import express from "express";
-import { dbSelect } from "../middelwares/dbSelect.js";
-import { authenticate } from "../middelwares/auth.js";
-import { authorize } from "../middelwares/authorize.js";
+import { dbSelect } from "../middlewares/dbSelect.js";
+import { authenticate } from "../middlewares/auth.js";
+import { authorize } from "../middlewares/authorize.js";
 import {
   getUsers,
   getUser,
@@ -17,20 +17,19 @@ import {
 
 const router = express.Router();
 
-router.use(dbSelect);
 
 // Only admin can manage users
-router.get("/users",                  authenticate, authorize("admin"), getUsers);
-router.get("/users/:id",              authenticate, authorize("admin"), getUser);
-router.post("/users",                 authenticate, authorize("admin"), createUser);
-router.put("/users/:id",              authenticate, authorize("admin"), updateUser);
-router.delete("/users/:id",           authenticate, authorize("admin"), deleteUser);
-router.get("/users/:id/permissions",  authenticate, authorize("admin"), getUserPermissions);
-router.put("/users/:id/permissions",  authenticate, authorize("admin"), updateUserPermissions);
+router.get("/users", authorize("admin"), getUsers);
+router.get("/users/:id", authorize("admin"), getUser);
+router.post("/users", authorize("admin"), createUser);
+router.put("/users/:id", authorize("admin"), updateUser);
+router.delete("/users/:id", authorize("admin"), deleteUser);
+router.get("/users/:id/permissions", authorize("admin"), getUserPermissions);
+router.put("/users/:id/permissions", authorize("admin"), updateUserPermissions);
 
 // Role permissions management
-router.get("/roles",                     authenticate, authorize("admin"), getRolesList);
-router.get("/roles/:roleName/permissions", authenticate, authorize("admin"), getRolePermissions);
-router.put("/roles/:roleName/permissions", authenticate, authorize("admin"), updateRolePermissions);
+router.get("/roles", authorize("admin"), getRolesList);
+router.get("/roles/:roleName/permissions", authorize("admin"), getRolePermissions);
+router.put("/roles/:roleName/permissions", authorize("admin"), updateRolePermissions);
 
 export default router;

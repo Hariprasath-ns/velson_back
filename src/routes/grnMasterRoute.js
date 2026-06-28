@@ -1,9 +1,8 @@
 import express from 'express';
-import { dbSelect } from '../middelwares/dbSelect.js';
+import { dbSelect } from '../middlewares/dbSelect.js';
 import { getNextNo, getAll, getOne, create, update, remove } from '../controllers/grnMasterController.js';
 
 const router = express.Router();
-router.use(dbSelect);
 
 router.get('/grn-master/next-no', getNextNo);
 router.get('/grn-master', getAll);

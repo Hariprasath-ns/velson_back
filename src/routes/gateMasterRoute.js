@@ -1,9 +1,8 @@
 import express from 'express';
-import { dbSelect } from '../middelwares/dbSelect.js';
+import { dbSelect } from '../middlewares/dbSelect.js';
 import { getNextNo, getAll, getOne, create, update, remove } from '../controllers/gateMasterController.js';
 
 const router = express.Router();
-router.use(dbSelect);
 
 router.get('/gate-master/next-no', getNextNo);
 router.get('/gate-master', getAll);

@@ -1,12 +1,11 @@
 import express from 'express';
-import { dbSelect } from '../middelwares/dbSelect.js';
+import { dbSelect } from '../middlewares/dbSelect.js';
 import {
   getAll, create, update, remove,
   generatePartNumber, previewPartNumber,
 } from '../controllers/partNumberBaseController.js';
 
 const router = express.Router();
-router.use(dbSelect);
 
 router.get('/part-number-base', getAll);
 router.get('/part-number-base/preview', previewPartNumber);   // before /:id

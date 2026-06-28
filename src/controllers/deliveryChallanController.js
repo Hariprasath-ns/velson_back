@@ -1,5 +1,5 @@
 import * as DcModel from '../models/deliveryChallanModel.js';
-import { BadRequestError, NotFoundError, ConflictError } from "../middelwares/customErrors.js";
+import { BadRequestError, NotFoundError, ConflictError } from "../middlewares/customErrors.js";
 import { eventBus } from '../services/eventBus.js';
 import { SOCKET_EVENTS } from '../utils/socketEvents.js';
 
@@ -121,8 +121,10 @@ export const getRecentValues = async (req, res) => {
 
 export const getAll = async (req, res) => {
   try {
-    const data = await DcModel.getAllDeliveryChallans(req.db);
-    res.json({ success: true, data });
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const result = await DcModel.getAllDeliveryChallans(req.db, page, limit);
+    res.json({ success: true, ...result });
   } catch (err) {
     throw err;
   }

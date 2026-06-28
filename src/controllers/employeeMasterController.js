@@ -1,5 +1,5 @@
 import * as EmployeeModel from '../models/employeeMasterModel.js';
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middlewares/customErrors.js";
 
 
 const toDate = (v) => (v && v.trim() ? new Date(v) : null);

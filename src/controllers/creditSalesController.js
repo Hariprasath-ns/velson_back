@@ -1,5 +1,5 @@
 import * as CreditSalesModel from '../models/creditSalesModel.js';
-import { BadRequestError, NotFoundError, ConflictError } from '../middelwares/customErrors.js';
+import { BadRequestError, NotFoundError, ConflictError } from '../middlewares/customErrors.js';
 
 const toFloat = (v) => (v !== '' && v != null ? parseFloat(v) || 0 : 0);
 const toInt   = (v) => (v !== '' && v != null ? parseInt(v, 10) || null : null);
@@ -176,8 +176,10 @@ export const update = async (req, res) => {
 
 export const getAll = async (req, res) => {
   try {
-    const data = await CreditSalesModel.getAllCreditSales(req.db);
-    res.json({ success: true, data });
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const result = await CreditSalesModel.getAllCreditSales(req.db, page, limit);
+    res.json({ success: true, ...result });
   } catch (err) {
     throw err;
   }

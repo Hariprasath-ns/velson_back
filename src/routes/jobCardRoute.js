@@ -1,5 +1,5 @@
 import express from "express";
-import { dbSelect } from "../middelwares/dbSelect.js";
+import { dbSelect } from "../middlewares/dbSelect.js";
 import {
   getAll,
   getNextNo,
@@ -14,7 +14,6 @@ import {
 
 const router = express.Router();
 
-router.use(dbSelect);
 
 router.get("/job-card", getAll);
 router.get("/job-card/next-no", getNextNo);

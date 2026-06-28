@@ -1,16 +1,24 @@
-export const getAllComplaints = (db) =>
-  db.customerComplaint.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: {
-      images: {
-        select: {
-          id: true,
-          name: true,
-          imageMimeType: true
+export const getAllComplaints = async (db, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [data, total] = await Promise.all([
+    db.customerComplaint.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        images: {
+          select: {
+            id: true,
+            name: true,
+            imageMimeType: true
+          }
         }
       }
-    }
-  });
+    }),
+    db.customerComplaint.count()
+  ]);
+  return { data, total, page, limit };
+};
 
 export const getComplaintById = (db, id) =>
   db.customerComplaint.findUnique({
@@ -20,12 +28,16 @@ export const getComplaintById = (db, id) =>
 
 export const getNextCCNo = async (db, yearStr) => {
   const prefix = `${yearStr}/CC`;
-  const rows = await db.$queryRawUnsafe(`
+  const likePattern = `${prefix}%`;
+  const regexPattern = `^${prefix}[0-9]+$`;
+  const startIndex = prefix.length + 1;
+
+  const rows = await db.$queryRaw`
     SELECT "ccNo" FROM customer_complaint
-    WHERE "ccNo" LIKE '${prefix}%' AND "ccNo" ~ '^${prefix}[0-9]+$'
-    ORDER BY CAST(SUBSTRING("ccNo" FROM ${prefix.length + 1}) AS INTEGER) DESC
+    WHERE "ccNo" LIKE ${likePattern} AND "ccNo" ~ ${regexPattern}
+    ORDER BY CAST(SUBSTRING("ccNo" FROM ${startIndex}) AS INTEGER) DESC
     LIMIT 1
-  `);
+  `;
   if (rows.length > 0) {
     const lastCcNo = rows[0].ccNo;
     const suffix = lastCcNo.slice(prefix.length);

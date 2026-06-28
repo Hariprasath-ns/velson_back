@@ -1,14 +1,8 @@
-import { ConflictError } from "../middelwares/customErrors.js";
+import { getFinancialYear } from "../utils/date.js";
+import { ConflictError } from "../middlewares/customErrors.js";
 import { eventBus } from "../services/eventBus.js";
 import { SOCKET_EVENTS } from "../utils/socketEvents.js";
 
-const getFinancialYear = () => {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-  const y1 = month >= 4 ? year : year - 1;
-  return `${String(y1).slice(-2)}-${String(y1 + 1).slice(-2)}`;
-};
 
 export const getNextIssueNo = async (db) => {
   const fy = getFinancialYear();
@@ -151,7 +145,20 @@ export const getBarcodes = async (db, partNo) => {
     }
   });
 
+  const itemCodes = new Set();
+  grnBarcodes.forEach(g => {
+    if (g.grn && g.grn.details) {
+      g.grn.details.forEach(d => {
+        if (d.itemCode) itemCodes.add(d.itemCode);
+      });
+    }
+  });
+  itemCodes.add(partNo);
+
   const items = await db.itemMaster.findMany({
+    where: {
+      partNo: { in: Array.from(itemCodes) }
+    },
     select: { partNo: true, barcodeType: true },
   });
   const barcodeTypeMap = {};
@@ -471,15 +478,21 @@ export const createIssue = async (db, data, userContext = null) => {
   return result;
 };
 
-export const getAllIssues = async (db) => {
-  const headers = await db.materialIssueHeader.findMany({
-    include: {
-      details: true
-    },
-    orderBy: { issueDate: 'desc' }
-  });
+export const getAllIssues = async (db, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [headers, total] = await Promise.all([
+    db.materialIssueHeader.findMany({
+      skip,
+      take: limit,
+      include: {
+        details: true
+      },
+      orderBy: { issueDate: 'desc' }
+    }),
+    db.materialIssueHeader.count()
+  ]);
 
-  return headers.map(h => ({
+  const data = headers.map(h => ({
     id: h.id,
     issueNo: h.issueNo,
     issueDate: h.issueDate,
@@ -501,6 +514,7 @@ export const getAllIssues = async (db) => {
       uom: 'Nos'
     }))
   }));
+  return { data, total, page, limit };
 };
 
 export const getBarcodeDetails = async (db, barcode) => {

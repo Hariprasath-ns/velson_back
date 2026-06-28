@@ -1,5 +1,5 @@
 import * as JobCardModel from '../models/jobCardModel.js';
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middlewares/customErrors.js";
 import { eventBus } from '../services/eventBus.js';
 import { SOCKET_EVENTS } from '../utils/socketEvents.js';
 import { getActorContext } from '../utils/actorContext.js';
@@ -42,8 +42,10 @@ const buildDetailRows = (items = []) =>
 
 export const getAll = async (req, res) => {
   try {
-    const records = await JobCardModel.getAllJobCards(req.db);
-    res.json({ success: true, data: records.map(mapResponse) });
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const result = await JobCardModel.getAllJobCards(req.db, page, limit);
+    res.json({ success: true, ...result, data: result.data.map(mapResponse) });
   } catch (err) {
     
     throw err;

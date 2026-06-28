@@ -1,5 +1,15 @@
-export const getAllCustomers = (db) =>
-  db.customerMaster.findMany({ orderBy: { createdAt: 'asc' } });
+export const getAllCustomers = async (db, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [data, total] = await Promise.all([
+    db.customerMaster.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'asc' }
+    }),
+    db.customerMaster.count()
+  ]);
+  return { data, total, page, limit };
+};
 
 export const getCustomerById = (db, id) =>
   db.customerMaster.findUnique({ where: { id } });

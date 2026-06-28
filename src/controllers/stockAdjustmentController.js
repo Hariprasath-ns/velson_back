@@ -1,5 +1,5 @@
 import * as StockAdjustmentModel from '../models/stockAdjustmentModel.js';
-import { BadRequestError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, ValidationError } from "../middlewares/customErrors.js";
 import { getActorContext } from '../utils/actorContext.js';
 import { eventBus } from '../services/eventBus.js';
 import { SOCKET_EVENTS } from '../utils/socketEvents.js';

@@ -3,29 +3,26 @@ import { SOCKET_EVENTS } from '../utils/socketEvents.js';
 
 export const getNextServiceBillRefNo = async (db) => {
   const rows = await db.$queryRaw`
-    SELECT "refNo" FROM service_bill
+    SELECT MAX(CAST("refNo" AS INTEGER)) as "maxRefNo" FROM service_bill
+    WHERE "refNo" ~ '^[0-9]+$'
   `;
-  const usedNums = new Set();
-  for (const r of rows) {
-    if (r.refNo) {
-      const num = parseInt(r.refNo, 10);
-      if (!isNaN(num)) {
-        usedNums.add(num);
-      }
-    }
-  }
-  let nextNum = 1;
-  while (usedNums.has(nextNum)) {
-    nextNum++;
-  }
+  const nextNum = (rows.length > 0 && rows[0].maxRefNo != null) ? parseInt(rows[0].maxRefNo, 10) + 1 : 1;
   return { refNo: String(nextNum) };
 };
 
-export const getAllServiceBills = (db) =>
-  db.serviceBill.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { items: { orderBy: { slNo: 'asc' } } }
-  });
+export const getAllServiceBills = async (db, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [data, total] = await Promise.all([
+    db.serviceBill.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: { items: { orderBy: { slNo: 'asc' } } }
+    }),
+    db.serviceBill.count()
+  ]);
+  return { data, total, page, limit };
+};
 
 export const getServiceBillById = (db, id) =>
   db.serviceBill.findUnique({

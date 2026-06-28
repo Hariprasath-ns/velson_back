@@ -1,12 +1,11 @@
 import express from 'express'
-import { dbSelect } from '../middelwares/dbSelect.js'
+import { dbSelect } from '../middlewares/dbSelect.js'
 import {
   getNextNo, getAll, getOne, create, update, remove, upload, uploadDocument, downloadDocument,
   getMarketingLogs, createMarketingLog, uploadMarketingLogDoc, downloadMarketingLogDoc, deleteMarketingLog
 } from '../controllers/quotationController.js'
 
 const router = express.Router()
-router.use(dbSelect)
 
 router.get('/quotation-master/next-no', getNextNo)
 router.get('/quotation-master', getAll)

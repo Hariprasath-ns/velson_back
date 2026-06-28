@@ -1,11 +1,10 @@
 import express from 'express';
 import Joi from 'joi';
-import { dbSelect } from '../middelwares/dbSelect.js';
-import { validateRequest } from '../middelwares/validateRequest.js';
+import { dbSelect } from '../middlewares/dbSelect.js';
+import { validateRequest } from '../middlewares/validateRequest.js';
 import { getNextNo, create, getRecentValues, getAll } from '../controllers/deliveryChallanController.js';
 
 const router = express.Router();
-router.use(dbSelect);
 
 // Validation schemas
 const createDcSchema = Joi.object({

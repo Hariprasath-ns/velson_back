@@ -1,5 +1,5 @@
 import * as ReferenceMasterModel from "../models/referenceMasterModel.js";
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middlewares/customErrors.js";
 
 
 export const getRecordsByType = async (req, res) => {

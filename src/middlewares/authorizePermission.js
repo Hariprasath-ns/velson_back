@@ -134,6 +134,23 @@ export const authorizePermission = async (req, res, next) => {
     if (method === "PUT" || method === "PATCH") actionKey = "canEdit";
     if (method === "DELETE") actionKey = "canDelete";
     
+    // First check user-specific permission overrides (absolute priority)
+    const userPerm = await req.db.userPermission.findUnique({
+      where: {
+        userId_module: {
+          userId: user.id,
+          module: module,
+        },
+      },
+    });
+
+    if (userPerm) {
+      if (userPerm[actionKey]) {
+        return next();
+      }
+      throw new ForbiddenError(`Forbidden: you do not have ${actionKey.slice(3).toLowerCase()} permission for ${module}`, ErrorCodes.FORBIDDEN);
+    }
+
     // Check if user has role-based permissions configured in database
     const rolePerms = await req.db.rolePermission.findMany({
       where: { role: user.role },

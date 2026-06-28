@@ -5,14 +5,14 @@ import dotenv from "dotenv";
 import cors from "cors";
 import morgan from "morgan";
 
-import { checkConnections } from "./config/db.js";
-import { authenticate } from "./middelwares/auth.js";
+import { checkConnections, neonPrisma, dockerPrisma } from "./config/db.js";
+import { authenticate } from "./middlewares/auth.js";
 import { requestIdMiddleware, logger } from "./utils/logger.js";
-import { notFoundMiddleware } from "./middelwares/notFoundMiddleware.js";
-import { errorMiddleware } from "./middelwares/errorMiddleware.js";
-import { apiLimiter } from "./middelwares/rateLimiter.js";
-import { authorizePermission } from "./middelwares/authorizePermission.js";
-import { dbSelect } from "./middelwares/dbSelect.js";
+import { notFoundMiddleware } from "./middlewares/notFoundMiddleware.js";
+import { errorMiddleware } from "./middlewares/errorMiddleware.js";
+import { apiLimiter } from "./middlewares/rateLimiter.js";
+import { authorizePermission } from "./middlewares/authorizePermission.js";
+import { dbSelect } from "./middlewares/dbSelect.js";
 
 import authRoute from "./routes/authRoute.js";
 import userRoute from "./routes/userRoute.js";
@@ -70,7 +70,23 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use(requestIdMiddleware);
 app.use(morgan("dev"));
 app.use(express.json());
-app.use(cors());
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map(o => o.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 
 // Rate limit all API requests
 app.use("/api", apiLimiter);
@@ -147,6 +163,19 @@ const PORT = process.env.PORT;
 const server = app.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);
   await checkConnections();
+
+  // Purge expired tokens from the blacklist every hour
+  setInterval(async () => {
+    try {
+      const now = new Date();
+      await Promise.allSettled([
+        neonPrisma.tokenBlacklist.deleteMany({ where: { expiresAt: { lt: now } } }),
+        dockerPrisma.tokenBlacklist.deleteMany({ where: { expiresAt: { lt: now } } }),
+      ]);
+    } catch (err) {
+      logger.error("[Blacklist Purge] Error purging expired tokens", err);
+    }
+  }, 3600000);
 });
 
 // Initialize WebSockets and Event Bus subscribers

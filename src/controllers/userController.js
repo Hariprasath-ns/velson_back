@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import * as UserModel from "../models/userModel.js";
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middlewares/customErrors.js";
 import { sendToRoleRoom, sendToUserRoom } from "../services/socketService.js";
 import { SOCKET_EVENTS } from "../utils/socketEvents.js";
 import { eventBus } from "../services/eventBus.js";

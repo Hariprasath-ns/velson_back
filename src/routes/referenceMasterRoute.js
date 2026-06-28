@@ -1,5 +1,5 @@
 import express from "express";
-import { dbSelect } from "../middelwares/dbSelect.js";
+import { dbSelect } from "../middlewares/dbSelect.js";
 import {
   getRecordsByType,
   createRecord,
@@ -9,7 +9,6 @@ import {
 
 const router = express.Router();
 
-router.use(dbSelect);
 
 router.get("/reference-master/:type", getRecordsByType);
 router.post("/reference-master", createRecord);

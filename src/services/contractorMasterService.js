@@ -1,5 +1,5 @@
 import * as Repository from "../repositories/contractorMasterRepository.js";
-import { BadRequestError, NotFoundError, ConflictError } from "../middelwares/customErrors.js";
+import { BadRequestError, NotFoundError, ConflictError } from "../middlewares/customErrors.js";
 
 /**
  * Get all contractors.

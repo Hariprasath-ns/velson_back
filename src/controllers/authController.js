@@ -1,12 +1,13 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middelwares/customErrors.js";
+import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError, ValidationError } from "../middlewares/customErrors.js";
 import { ErrorCodes } from "../utils/errorCodes.js";
 
 const generateAccessToken = (user) => {
+  const jti = crypto.randomUUID();
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.id, email: user.email, role: user.role, jti },
     process.env.JWT_SECRET,
     { expiresIn: "15m" }
   );
@@ -144,6 +145,30 @@ export const refresh = async (req, res) => {
       }),
     ]);
 
+    // Blacklist the current access token on refresh if provided
+    const header = req.headers.authorization;
+    if (header && header.startsWith("Bearer ")) {
+      const tokenStr = header.slice(7);
+      try {
+        const decoded = jwt.verify(tokenStr, process.env.JWT_SECRET, { ignoreExpiration: true });
+        if (decoded.jti) {
+          const expAt = new Date(decoded.exp * 1000);
+          if (expAt > new Date()) {
+            await req.db.tokenBlacklist.upsert({
+              where: { jti: decoded.jti },
+              update: {},
+              create: {
+                jti: decoded.jti,
+                expiresAt: expAt,
+              },
+            }).catch(() => {});
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+
     res.json({
       token,
       refreshToken: newRefreshTokenString,
@@ -161,6 +186,29 @@ export const logout = async (req, res) => {
         where: { token: refreshToken },
       });
     }
+
+    // Blacklist current access token on logout
+    const header = req.headers.authorization;
+    if (header && header.startsWith("Bearer ")) {
+      const tokenStr = header.slice(7);
+      try {
+        const decoded = jwt.verify(tokenStr, process.env.JWT_SECRET);
+        if (decoded.jti) {
+          const expAt = new Date(decoded.exp * 1000);
+          await req.db.tokenBlacklist.upsert({
+            where: { jti: decoded.jti },
+            update: {},
+            create: {
+              jti: decoded.jti,
+              expiresAt: expAt,
+            },
+          }).catch(() => {});
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+
     res.json({ success: true });
   } catch (err) {
     throw err;

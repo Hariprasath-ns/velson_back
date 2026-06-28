@@ -1,10 +1,4 @@
-const getFinancialYear = () => {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-  const y1 = month >= 4 ? year : year - 1;
-  return `${String(y1).slice(-2)}-${String(y1 + 1).slice(-2)}`;
-};
+import { getFinancialYear } from "../utils/date.js";
 
 const getOffsetBarcode = (grnbarcode, offset) => {
   if (!grnbarcode) return '';
@@ -80,12 +74,30 @@ export const getNextGRNNo = async (db) => {
   return { grnNo: `${fy}/GRN00001`, financialYear: fy };
 };
 
-export const getAllGRNEntries = async (db) => {
-  const entries = await db.gRNMaster.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { details: { orderBy: { slNo: 'asc' } } },
+export const getAllGRNEntries = async (db, page = 1, limit = 20) => {
+  const skip = (page - 1) * limit;
+  const [entries, total] = await Promise.all([
+    db.gRNMaster.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: { details: { orderBy: { slNo: 'asc' } } },
+    }),
+    db.gRNMaster.count()
+  ]);
+  const itemCodes = new Set();
+  entries.forEach(entry => {
+    if (entry.details) {
+      entry.details.forEach(d => {
+        if (d.itemCode) itemCodes.add(d.itemCode);
+      });
+    }
   });
+
   const items = await db.itemMaster.findMany({
+    where: {
+      partNo: { in: Array.from(itemCodes) }
+    },
     select: { partNo: true, barcodeType: true },
   });
   const barcodeTypeMap = {};
@@ -109,7 +121,17 @@ export const getGRNEntryById = async (db, id) => {
     include: { details: { orderBy: { slNo: 'asc' } } },
   });
   if (!entry) return null;
+  const itemCodes = new Set();
+  if (entry.details) {
+    entry.details.forEach(d => {
+      if (d.itemCode) itemCodes.add(d.itemCode);
+    });
+  }
+
   const items = await db.itemMaster.findMany({
+    where: {
+      partNo: { in: Array.from(itemCodes) }
+    },
     select: { partNo: true, barcodeType: true },
   });
   const barcodeTypeMap = {};
@@ -155,7 +177,20 @@ export const createGRNEntry = (db, headerData, detailRows) =>
       },
     });
 
+    const itemCodes = new Set();
+    detailRows.forEach(row => {
+      if (row.itemCode) itemCodes.add(row.itemCode);
+    });
+    if (lastEntry && lastEntry.details) {
+      lastEntry.details.forEach(d => {
+        if (d.itemCode) itemCodes.add(d.itemCode);
+      });
+    }
+
     const items = await tx.itemMaster.findMany({
+      where: {
+        partNo: { in: Array.from(itemCodes) }
+      },
       select: { partNo: true, barcodeType: true },
     });
     const barcodeTypeMap = {};

@@ -145,29 +145,6 @@ export const refresh = async (req, res) => {
       }),
     ]);
 
-    // Blacklist the current access token on refresh if provided
-    const header = req.headers.authorization;
-    if (header && header.startsWith("Bearer ")) {
-      const tokenStr = header.slice(7);
-      try {
-        const decoded = jwt.verify(tokenStr, process.env.JWT_SECRET, { ignoreExpiration: true });
-        if (decoded.jti) {
-          const expAt = new Date(decoded.exp * 1000);
-          if (expAt > new Date()) {
-            await req.db.tokenBlacklist.upsert({
-              where: { jti: decoded.jti },
-              update: {},
-              create: {
-                jti: decoded.jti,
-                expiresAt: expAt,
-              },
-            }).catch(() => {});
-          }
-        }
-      } catch (err) {
-        // ignore
-      }
-    }
 
     res.json({
       token,

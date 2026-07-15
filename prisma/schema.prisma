@@ -1,0 +1,1738 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            Int              @id @default(autoincrement())
+  name          String
+  email         String           @unique
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  credentials   UserCredential?
+  permissions             UserPermission[]
+  refreshTokens           RefreshToken[]
+  notifications           Notification[]
+  notificationPreferences UserNotificationPreference[]
+}
+
+model UserCredential {
+  id             Int       @id @default(autoincrement())
+  userId         Int       @unique
+  username       String    @unique
+  password       String
+  role           String    @default("user")
+  isActive       Boolean   @default(true)
+  failedAttempts Int       @default(0)
+  lockoutUntil   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserPermission {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  module     String // e.g. "company-master"
+  canDisplay Boolean  @default(false)
+  canSave    Boolean  @default(false)
+  canEdit    Boolean  @default(false)
+  canDelete  Boolean  @default(false)
+  canPrint   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, module])
+  @@map("user_permission")
+}
+
+model RolePermission {
+  id         Int      @id @default(autoincrement())
+  role       String // e.g. "ACCOUNTS", "PURCHASE"
+  module     String // e.g. "company-master"
+  canDisplay Boolean  @default(false)
+  canSave    Boolean  @default(false)
+  canEdit    Boolean  @default(false)
+  canDelete  Boolean  @default(false)
+  canPrint   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([role, module])
+  @@map("role_permission")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_token")
+}
+
+model ReferenceType {
+  id               Int               @id @default(autoincrement())
+  code             String            @unique
+  name             String            @unique
+  createdBy        String?
+  createdAt        DateTime          @default(now())
+  referenceMasters ReferenceMaster[]
+
+  @@map("reference_type")
+}
+
+model ReferenceMaster {
+  id                              Int               @id @default(autoincrement())
+  referenceType                   String
+  code                            String
+  description                     String
+  updatedBy                       String
+  createdAt                       DateTime          @default(now())
+  updatedAt                       DateTime          @updatedAt
+  referenceTypeId                 Int?
+  purchaseRequestsByDept          PurchaseRequest[] @relation("PRDepartmentRef")
+  purchaseRequestsByRequestingFor PurchaseRequest[] @relation("PRRequestingForRef")
+  purchaseRequestsByTeam          PurchaseRequest[] @relation("PRTeamRef")
+  refType                         ReferenceType?    @relation(fields: [referenceTypeId], references: [id])
+
+  @@map("reference_master")
+}
+
+model TaxLedgerAccount {
+  id         Int         @id @default(autoincrement())
+  ledgerName String      @unique
+  taxPercent Float
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  taxMasters TaxMaster[]
+
+  @@map("tax_ledger_account")
+}
+
+model ItemGroupMaster {
+  id        Int      @id @default(autoincrement())
+  groupName String
+  store     String
+  prefix    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("item_group_master")
+}
+
+model Prefix {
+  id         Int      @id @default(autoincrement())
+  prefixCode String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("prefix")
+}
+
+model TaxMaster {
+  id              Int              @id @default(autoincrement())
+  taxLedgerId     Int
+  taxPercent      Float
+  cgstTax         Float
+  sgstTax         Float
+  igstTax         Float
+  purchaseCgstTax Float
+  purchaseSgstTax Float
+  purchaseIgstTax Float
+  salesCgstTax    Float
+  salesSgstTax    Float
+  salesIgstTax    Float
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  taxLedger       TaxLedgerAccount @relation(fields: [taxLedgerId], references: [id], onDelete: Cascade)
+
+  @@map("tax_master")
+}
+
+model CategoryMaster {
+  id            Int                 @id @default(autoincrement())
+  categoryName  String              @unique
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  partNumbers   PartNumberBase[]
+  subCategories SubCategoryMaster[]
+
+  @@map("category_master")
+}
+
+model SubCategoryMaster {
+  id              Int              @id @default(autoincrement())
+  categoryId      Int
+  subCategoryName String
+  prefixCode      String
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  partNumbers     PartNumberBase[]
+  category        CategoryMaster   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, subCategoryName])
+  @@map("sub_category_master")
+}
+
+model PartNumberBase {
+  id                   Int               @id @default(autoincrement())
+  categoryId           Int
+  subCategoryId        Int
+  prefixCode           String
+  digitCount           Int
+  startingNumber       Int
+  endingNumber         Int
+  currentRunningNumber Int
+  totalNumbers         Int
+  isActive             Boolean           @default(true)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  category             CategoryMaster    @relation(fields: [categoryId], references: [id])
+  subCategory          SubCategoryMaster @relation(fields: [subCategoryId], references: [id])
+
+  @@map("part_number_base")
+}
+
+model ItemMaster {
+  id                     Int                     @id @default(autoincrement())
+  groupId                Int?
+  partNo                 String                  @unique
+  outsourcePartNo        String?
+  partName               String
+  modelId                Int?
+  brand                  String?
+  description            String?
+  size                   String?
+  weight                 Float?
+  unitId                 Int?
+  hsnCode                String?
+  purchaseRate           Float?
+  marginPercent          Float?
+  rate                   Float?
+  labourCharge           Decimal?                @db.Decimal(10, 2)
+  currencyId             Int?
+  taxId                  Int?
+  subGroupId             Int?
+  storeId                Int?
+  rackNo                 String?
+  location               String?
+  itemTypeId             Int?
+  qcTypeId               Int?
+  materialGradeId        Int?
+  materialTypeId         Int?
+  rawMaterialId          Int?
+  rmLength               String?
+  rawMaterialWt          Float?
+  fgMaterialWt           Float?
+  reorderLevel           Float?
+  minStock               Float?
+  routeCardNo            String?
+  barcodeType            String?
+  remark                 String?
+  rawMaterial            String?
+  createdBy              String?
+  updatedBy              String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  version                Int                     @default(0)
+  imagePath              String?
+  pdfPath                String?
+  imageData              Bytes?
+  imageMimeType          String?
+  pdfData                Bytes?
+  pdfMimeType            String?
+  uploads                ItemMasterUpload[]
+  purchaseDetails        PurchaseDetail[]
+  purchaseRequestDetails PurchaseRequestDetail[]
+  quotationDetails       QuotationDetail[]
+  quotationSalesDetails  QuotationSalesDetail[]
+
+  @@index([partNo, barcodeType])
+  @@index([createdAt])
+  @@map("item_master")
+}
+
+model SupplierMaster {
+  id             Int              @id @default(autoincrement())
+  supplierType   String
+  sCode          String           @unique
+  supplierName   String
+  address        String?
+  address2       String?
+  address3       String?
+  address4       String?
+  city           String?
+  country        String?          @default("India")
+  state          String?
+  stateCode      String?
+  pinCode        String?
+  contactPerson  String?
+  mobile         String?
+  mobileCode     String?
+  phone          String?
+  phoneCode      String?
+  email          String?
+  website        String?
+  gstNo          String?
+  panNo          String?
+  bankName       String?
+  branchName     String?
+  accountName    String?
+  accountNumber  String?
+  ifscCode       String?
+  micrCode       String?
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  purchaseOrders PurchaseMaster[]
+  deliveryChallans DeliveryChallan[]
+
+  @@index([createdAt])
+  @@map("supplier_master")
+}
+
+model ItemMasterUpload {
+  id            Int        @id @default(autoincrement())
+  itemId        Int
+  imagePath     String?
+  pdfPath       String?
+  updatedBy     String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  imageData     Bytes?
+  imageMimeType String?
+  pdfData       Bytes?
+  pdfMimeType   String?
+  item          ItemMaster @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@map("item_master_upload")
+}
+
+model CustomerMaster {
+  id             Int               @id @default(autoincrement())
+  customerType   String
+  cCode          String            @unique
+  customerName   String
+  address        String?
+  address2       String?
+  address3       String?
+  address4       String?
+  city           String?
+  country        String?           @default("India")
+  state          String?
+  stateCode      String?
+  pinCode        String?
+  contactPerson  String?
+  mobile         String?
+  mobileCode     String?
+  phone          String?
+  phoneCode      String?
+  email          String?
+  website        String?
+  aadharNo       String?
+  gstNo          String?
+  panNo          String?
+  bankName       String?
+  branchName     String?
+  accountName    String?
+  accountNumber  String?
+  ifscCode       String?
+  micrCode       String?
+  remarks        String?
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  imageData      Bytes?
+  imageMimeType  String?
+  imagePath      String?
+  pdfData        Bytes?
+  pdfMimeType    String?
+  pdfPath        String?
+  quotations       QuotationMaster[]
+  quotationSales   QuotationSales[]
+  vehicleMasters   VehicleMaster[]
+  deliveryChallans DeliveryChallan[]
+  outsourceParts   OutsourceParts[]
+
+  @@index([createdAt])
+  @@map("customer_master")
+}
+
+model VehicleMaster {
+  id             Int            @id @default(autoincrement())
+  entryDate      DateTime       @default(now())
+  customerId     Int
+  vehicleCount   Int?           @default(1)
+  address        String?
+  vehicleNumber  String?
+  modelName      String
+  modelSubType   String?
+  vehicleName    String
+  serialNumber   String?
+  bomType        String         @default("New")
+  bomModelNumber String?
+  remarks        String?
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  customer       CustomerMaster @relation(fields: [customerId], references: [id])
+
+  @@map("vehicle_master")
+}
+
+model QuotationMaster {
+  id                Int               @id @default(autoincrement())
+  quotationNo       String            @unique
+  financialYear     String
+  customerId        Int
+  customerRef       String?
+  currencyCode      String?           @default("INR")
+  exchangeRate      Float             @default(1)
+  modelRef          String?
+  taxType           String?
+  quotationDate     DateTime          @default(now())
+  validUntil        DateTime?
+  revisionNo        Int               @default(0)
+  quotationType     String?
+  discountType      String            @default("Dis_Per")
+  showTotalsGrid    Boolean           @default(false)
+  specialDiscount   Float             @default(0)
+  freightAmount     Float             @default(0)
+  taxPercent        Float             @default(18)
+  packingForwarding Float             @default(0)
+  subTotal          Float             @default(0)
+  taxAmount         Float             @default(0)
+  totalAmount       Float             @default(0)
+  paymentTerms      String?
+  status            String            @default("Draft")
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  documentPath      String?
+  documentData      Bytes?
+  documentMimeType  String?
+  details           QuotationDetail[]
+  customer          CustomerMaster    @relation(fields: [customerId], references: [id])
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([customerId])
+  @@map("quotation_master")
+}
+
+model QuotationDetail {
+  id          Int             @id @default(autoincrement())
+  quotationId Int
+  itemId      Int?
+  partNo      String?
+  itemName    String?
+  description String?
+  hsnCode     String?
+  uom         String?
+  qty         Float           @default(0)
+  unitPrice   Float           @default(0)
+  amount      Float           @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  slNo        Int
+  item        ItemMaster?     @relation(fields: [itemId], references: [id])
+  quotation   QuotationMaster @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@map("quotation_detail")
+}
+
+model QuotationSales {
+  id                Int                    @id @default(autoincrement())
+  quotationNo       String                 @unique
+  financialYear     String
+  customerId        Int
+  customerRef       String?
+  currencyCode      String?                @default("INR")
+  exchangeRate      Float                  @default(1)
+  modelRef          String?
+  taxType           String?
+  quotationDate     DateTime               @default(now())
+  validUntil        DateTime?
+  revisionNo        Int                    @default(0)
+  quotationType     String?
+  discountType      String                 @default("Dis_Per")
+  showTotalsGrid    Boolean                @default(false)
+  specialDiscount   Float                  @default(0)
+  freightAmount     Float                  @default(0)
+  taxPercent        Float                  @default(18)
+  packingForwarding Float                  @default(0)
+  subTotal          Float                  @default(0)
+  taxAmount         Float                  @default(0)
+  totalAmount       Float                  @default(0)
+  paymentTerms      String?
+  status            String                 @default("Draft")
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  documentPath      String?
+  documentData      Bytes?
+  documentMimeType  String?
+  details           QuotationSalesDetail[]
+  customer          CustomerMaster         @relation(fields: [customerId], references: [id])
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([customerId])
+  @@map("quotation_sales")
+}
+
+model QuotationSalesDetail {
+  id               Int            @id @default(autoincrement())
+  quotationSalesId Int
+  itemId           Int?
+  partNo           String?
+  itemName         String?
+  description      String?
+  hsnCode          String?
+  uom              String?
+  qty              Float          @default(0)
+  unitPrice        Float          @default(0)
+  amount           Float          @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  slNo             Int
+  item             ItemMaster?    @relation(fields: [itemId], references: [id])
+  quotationSales   QuotationSales @relation(fields: [quotationSalesId], references: [id], onDelete: Cascade)
+
+  @@map("quotation_sales_detail")
+}
+
+model PurchaseRequest {
+  id               Int                     @id @default(autoincrement())
+  prNo             String                  @unique
+  financialYear    String
+  prDate           DateTime                @default(now())
+  requiredDate     DateTime?
+  department       String?
+  requestingUser   String?
+  team             String?
+  requestingFor    String?
+  remarks          String?
+  status           String                  @default("Draft")
+  poNo             String?
+  poDate           DateTime?
+  createdBy        String?
+  updatedBy        String?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  departmentId     Int?
+  teamId           Int?
+  requestingForId  Int?
+  departmentRef    ReferenceMaster?        @relation("PRDepartmentRef", fields: [departmentId], references: [id])
+  requestingForRef ReferenceMaster?        @relation("PRRequestingForRef", fields: [requestingForId], references: [id])
+  teamRef          ReferenceMaster?        @relation("PRTeamRef", fields: [teamId], references: [id])
+  details          PurchaseRequestDetail[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@map("purchase_request")
+}
+
+model PurchaseRequestDetail {
+  id            Int             @id @default(autoincrement())
+  prId          Int
+  slNo          Int
+  itemId        Int?
+  itemCode      String?
+  itemName      String?
+  specification String?
+  jobNo         String?
+  machineNo     String?
+  uom           String?
+  qty           Float           @default(0)
+  eta           DateTime?
+  purpose       String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  item          ItemMaster?     @relation(fields: [itemId], references: [id])
+  pr            PurchaseRequest @relation(fields: [prId], references: [id], onDelete: Cascade)
+
+  @@map("purchase_request_detail")
+}
+
+model PurchaseMaster {
+  id              Int              @id @default(autoincrement())
+  poNo            String           @unique
+  financialYear   String
+  poDate          DateTime         @default(now())
+  etaDate         DateTime?
+  poType          String           @default("Purchase Order")
+  contactPerson   String?
+  contactNumber   String?
+  supplierAddress String?
+  gstNo           String?
+  supplierRefNo   String?
+  discountType    String           @default("Dis_Per")
+  freight         Float            @default(0)
+  destination     String?
+  paymentTerms    String?
+  testReport      String?
+  project         String?
+  modeOfDespatch  String?
+  deliveryPeriod  String?
+  taxTerms        String?
+  warrantyTerms   String?
+  discountTerms   String?
+  remarks         String?
+  subTotal        Float            @default(0)
+  cgstPer         Float            @default(0)
+  cgstAmt         Float            @default(0)
+  sgstPer         Float            @default(0)
+  sgstAmt         Float            @default(0)
+  igstPer         Float            @default(0)
+  igstAmt         Float            @default(0)
+  othersPer       Float            @default(0)
+  othersAmt       Float            @default(0)
+  totalAmount     Float            @default(0)
+  status          String           @default("Draft")
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  details         PurchaseDetail[]
+  supplier        SupplierMaster?  @relation(fields: [supplierRefNo], references: [sCode])
+
+  @@index([destination, paymentTerms, project, modeOfDespatch, freight])
+  @@index([createdAt])
+  @@index([status])
+  @@map("purchase_master")
+}
+
+model PurchaseDetail {
+  id             Int            @id @default(autoincrement())
+  poId           Int
+  slNo           Int
+  itemId         Int?
+  purchaseReqNo  String?
+  supplierPartNo String?
+  itemCode       String?
+  itemName       String?
+  description    String?
+  hsnCode        String?
+  uom            String?
+  qty            Float          @default(0)
+  unitPrice      Float          @default(0)
+  discPer        Float          @default(0)
+  discAmt        Float          @default(0)
+  amount         Float          @default(0)
+  gstPer         Float          @default(0)
+  gstAmt         Float          @default(0)
+  netAmt         Float          @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  item           ItemMaster?    @relation(fields: [itemId], references: [id])
+  po             PurchaseMaster @relation(fields: [poId], references: [id], onDelete: Cascade)
+
+  @@map("purchase_detail")
+}
+
+model GateMaster {
+  id              Int          @id @default(autoincrement())
+  gateEntryNo     String       @unique
+  financialYear   String       @default("")
+  gateEntryDate   DateTime     @default(now())
+  poId            Int?
+  poNo            String?
+  prqNo           String?
+  supplierName    String?
+  supplierAddress String?
+  gateNo          String?
+  carrierName     String?
+  vehicleNo       String?
+  invoiceNo       String?
+  invoiceDate     DateTime?
+  remarks         String?
+  status          String       @default("Open")
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  details         GateDetail[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@map("gate_master")
+}
+
+model EmployeeMaster {
+  id             Int       @id @default(autoincrement())
+  empCode        String    @unique
+  empName        String
+  address        String?
+  contactNo      String?
+  adharNo        String?
+  joinDate       DateTime?
+  relevingDate   DateTime?
+  department     String?
+  designation    String?
+  contractPerson String?
+  companyName    String?
+  team           String?
+  emailId        String?
+  repPerson      String?
+  status         String    @default("Active")
+  createdBy      String?
+  updatedBy      String?
+  deletedBy      String?
+  deletedDate    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("employee_master")
+}
+
+model CompanyMaster {
+  id                Int      @id @default(autoincrement())
+  companyCode       String   @unique
+  companyName       String
+  companyType       String?
+  doorNumber        String?
+  street            String?
+  place             String?
+  post              String?
+  city              String?
+  taluk             String?
+  district          String?
+  districtCode      String?
+  state             String?
+  stateCode         String?
+  country           String?  @default("India")
+  pinCode           String?
+  address           String?
+  gstin             String?
+  panNo             String?
+  companyPhone      String?
+  companyEmail      String?
+  companyWebsite    String?
+  marketingPhone    String?
+  marketingEmail    String?
+  marketingWebsite  String?
+  purchasePhone     String?
+  purchaseEmail     String?
+  purchaseWebsite   String?
+  salesPhone        String?
+  salesEmail        String?
+  salesWebsite      String?
+  servicePhone      String?
+  serviceEmail      String?
+  serviceWebsite    String?
+  bankName          String?
+  bankBranch        String?
+  bankAccountType   String?
+  bankAccountName   String?
+  bankAccountNumber String?
+  bankIfscCode      String?
+  bankMicrCode      String?
+  bankDistrict      String?
+  bankState         String?
+  bankPinCode       String?
+  bankCountry       String?
+  bankAddress       String?
+  logoPath          String?
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  logoData          Bytes?
+  logoMimeType      String?
+
+  @@map("company_master")
+}
+
+model GateDetail {
+  id             Int        @id @default(autoincrement())
+  gateId         Int
+  slNo           Int
+  poNo           String?
+  itemCode       String?
+  itemName       String?
+  supplierPartNo String?
+  description    String?
+  hsnCode        String?
+  unit           String?
+  qty            Float      @default(0)
+  recQty         Float      @default(0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  gate           GateMaster @relation(fields: [gateId], references: [id], onDelete: Cascade)
+
+  @@map("gate_detail")
+}
+
+model ContractorMaster {
+  id           Int      @id @default(autoincrement())
+  contractCode String   @unique
+  contractName String
+  address      String?
+  phone        String?
+  email        String?
+  status       String   @default("Active")
+  createdBy    String?
+  updatedBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("contractor_master")
+}
+
+model GRNMaster {
+  id             Int         @id @default(autoincrement())
+  grnNo          String      @unique
+  financialYear  String      @default("")
+  grnDate        DateTime    @default(now())
+  grnType        String?
+  gateEntryNo    String?
+  supplierName   String?
+  contactPerson  String?
+  contactNo      String?
+  purchaseLedger String?
+  purchaseType   String?
+  currency       String?
+  currencyType   String?
+  poNo           String?
+  poDate         DateTime?
+  taxType        String?
+  exchangeRate   Float       @default(0)
+  invoiceNo      String?
+  invoiceDate    DateTime?
+  grnbarcode     String?
+  qcType         String?
+  discountType   String      @default("Dis_Per")
+  remarks        String?
+  currencyTotal  Float       @default(0)
+  roundOff       Float       @default(0)
+  freightLedger  String?
+  tcsLedger      String?
+  subTotal       Float       @default(0)
+  totalAmount    Float       @default(0)
+  status         String      @default("Open")
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  details        GRNDetail[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@map("grn_master")
+}
+
+model GRNDetail {
+  id             Int       @id @default(autoincrement())
+  grnId          Int
+  slNo           Int
+  itemCode       String?
+  itemName       String?
+  qcType         String?
+  supplierPartNo String?
+  description    String?
+  hsnCode        String?
+  unit           String?
+  stockQty       Float     @default(0)
+  orderQty       Float     @default(0)
+  qty            Float     @default(0)
+  unitPrice      Float     @default(0)
+  total          Float     @default(0)
+  discPer        Float     @default(0)
+  discAmt        Float     @default(0)
+  finalPrice     Float     @default(0)
+  taxPer         Float     @default(0)
+  netAmt         Float     @default(0)
+  barcode        String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  version        Int       @default(0)
+  grn            GRNMaster @relation(fields: [grnId], references: [id], onDelete: Cascade)
+
+  @@index([itemCode, stockQty])
+  @@map("grn_detail")
+}
+
+model MachineMaster {
+  id                 Int       @id @default(autoincrement())
+  machineCode        String    @unique
+  machineName        String
+  serialNo           String?
+  machineCategoryId  String?
+  workHoursPerDay    String?
+  model              String?
+  country            String?
+  currency           String?
+  vendorId           String?
+  installationPlace  String?
+  remarks            String?
+  manufacture        String?
+  price              Float?
+  yearOfFG           DateTime?
+  dateOfPurchase     DateTime?
+  dateOfInstallation DateTime?
+  warantyExpDate     DateTime?
+  amcExpDate         DateTime?
+  status             String    @default("Active")
+  createdBy          String?
+  updatedBy          String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@map("machine_master")
+}
+
+model VehicleServiceMaster {
+  id             Int      @id @default(autoincrement())
+  vehicleTypeId  String
+  serviceName    String
+  labourCharge   Float    @default(0)
+  materialCharge Float    @default(0)
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("vehicle_service_master")
+}
+
+model MaterialRequest {
+  id             Int                     @id @default(autoincrement())
+  mrNo           String                  @unique
+  financialYear  String
+  tempRequestNo  String?
+  departmentTo   String?
+  requestingUser String?
+  team           String?
+  requestingFor  String?
+  requestDate    DateTime                @default(now())
+  requiredDate   DateTime?
+  requiredDays   String?
+  storeName      String?
+  bomPartName    String?
+  vehicleName    String?
+  remarks        String?
+  status         String                  @default("Draft")
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  details        MaterialRequestDetail[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@map("material_request")
+}
+
+model MaterialRequestDetail {
+  id            Int             @id @default(autoincrement())
+  mrId          Int
+  slNo          Int
+  modelName     String?
+  itemCode      String?
+  itemName      String?
+  requestedQty  Float           @default(0)
+  materialGrade String?
+  unit          String?
+  remarks       String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  mr            MaterialRequest @relation(fields: [mrId], references: [id], onDelete: Cascade)
+
+  @@map("material_request_detail")
+}
+
+model QCCheckMethod {
+  id          Int      @id @default(autoincrement())
+  checkCode   String   @unique
+  checkName   String
+  description String?
+  status      String   @default("A")
+  createdBy   String?
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@map("qc_check_method")
+}
+
+model PartUsageList {
+  id           Int      @id @default(autoincrement())
+  partNo       String
+  partName     String
+  group        String?
+  partSpareQty Int?
+  createdBy    String?
+  updatedBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@map("part_usage_list")
+}
+
+model ServiceBooking {
+  id                   Int      @id @default(autoincrement())
+  bookingId            Int      @unique
+  bookingDate          String
+  customerName         String
+  customerCode         String?
+  customerVehicleCount Int?     @default(1)
+  vehicleSerialNo      String?
+  serialNo             String?
+  vehicleNo            String?
+  serviceJobNo         String   @unique
+  vehicleModelNo       String
+  modelSubType         String
+  vehicleName          String
+  status               String   @default("Pending")
+  tempStatus           String?  @default("Open")
+  remarks              String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("service_booking")
+}
+
+model ServiceDetail {
+  id                Int      @id @default(autoincrement())
+  serviceJobNo      String   @unique
+  customerCode      String?
+  vehicleCount      Int?     @default(1)
+  customerName      String?
+  bookingId         Int?
+  bookingDate       String?
+  serialNo          String?
+  vehicleNo         String?
+  vehicleModelNo    String
+  modelSubType      String
+  vehicleName       String
+  status            String   @default("Open")
+  remarks           String?
+  servicePartNo     String?
+  checkedAssemblies String[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("service_detail")
+}
+
+model BomCreation {
+  id              Int      @id @default(autoincrement())
+  bomNo           String   @unique
+  date            DateTime @default(now())
+  customerName    String
+  customerCode    String?
+  vehicleCount    Int?
+  serviceJobNo    String
+  vehicleSerialNo String?
+  model           String?
+  fileLocation    String?
+  fileName        String?
+  groupName       String?
+  assemblyPartNo  String?
+  status          String   @default("Created")
+  excelRows       Json?
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("bom_creation")
+}
+
+model JobCard {
+  id                 Int               @id @default(autoincrement())
+  jobNo              String            @unique
+  model              String?
+  qtyV               Float?
+  currentDate        DateTime?
+  priority           String?
+  requiredDate       DateTime?
+  note               String?
+  partImage          Bytes?
+  partImageMime      String?
+  status             String            @default("Pending")
+  approvedDate       DateTime?
+  approvedBy         String?
+  rejectedDate       DateTime?
+  cancelledDate      DateTime?
+  cancellationReason String?
+  workingStartDate   DateTime?
+  workingEndDate     DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  lineItems          JobCardLineItem[]
+  processMenus       JobProcessMenu[]
+  selfStockIn        Boolean?          @default(false)
+  selectedCustomers  Json?
+
+  @@index([createdAt])
+  @@index([status])
+  @@map("job_card")
+}
+
+model JobCardLineItem {
+  id               Int       @id @default(autoincrement())
+  jobCardId        Int
+  slNo             Int
+  partNo           String
+  partName         String
+  planQty          Float?
+  uom              String?
+  processName      String?
+  processDate      DateTime?
+  state            String?
+  empName          String?
+  machineName      String?
+  workCenterNo     String?
+  remarks          String?
+  notApplicable    Boolean   @default(false)
+  workingStartDate DateTime?
+  workingEndDate   DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  jobCard          JobCard   @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+
+  @@map("job_card_line_item")
+}
+
+model ProcessMaster {
+  id           Int      @id @default(autoincrement())
+  partName     String   @map("pm_part_name")
+  processName  String   @map("pm_process_name")
+  processName1 String?  @map("pm_process_name1")
+  processOrder String   @map("pm_process_order")
+  teamId       String?  @map("team_id")
+  machineCode  String?  @map("machine_code")
+  machineName  String?  @map("machine_name")
+  days         String?  @map("pm_days")
+  hours        String?  @map("pm_hours")
+  minutes      String?  @map("minutes")
+  settingTime  String?  @map("setting_time")
+  cycleTime    String?  @map("cycle_time")
+  handlingTime String?  @map("handling_time")
+  idleTime     String?  @map("idle_time")
+  createdBy    String?  @default("Admin") @map("created_by")
+  updatedBy    String?  @default("Admin") @map("updated_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("process_master")
+}
+
+model MarketingLog {
+  id               Int      @id @default(autoincrement())
+  ledgerName       String   @map("ledger_name")
+  customerCode     String   @map("customer_code")
+  logDate          DateTime @default(now()) @map("log_date")
+  documentPath     String?  @map("document_path")
+  documentData     Bytes?   @map("document_data")
+  documentMimeType String?  @map("document_mime_type")
+  remarks          String?  @map("remarks")
+  createdBy        String?  @default("ADMIN") @map("created_by")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("marketing_log")
+}
+
+model CustomerComplaint {
+  id                   Int                      @id @default(autoincrement())
+  ccNo                 String                   @unique
+  recDate              String?
+  customerName         String
+  customerCode         String?
+  complainantName      String?
+  modelNo              String?
+  siteAddress          String?
+  whatsappLocation     String?
+  openingComplaint     String?
+  serialNo             String?
+  designation          String?
+  mobileNo             String?
+  alternateNo          String?
+  emailId              String?
+  complaintType        String?
+  serviceType          String?
+  workCompleteDate     String?
+  complaintClosedDate  String?
+  natureOfComplaint    String?
+  actionThrough        String?
+  attenderName         String?
+  attenDate            String?
+  finalDate            String?
+  actionTaken          String?
+  preventiveMeasure    String?
+  feedbackSatisfaction String?
+  status               String                   @default("Open")
+  vehicleCount         String?
+  createdBy            String?                  @default("Admin")
+  updatedBy            String?                  @default("Admin")
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  images               CustomerComplaintImage[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@map("customer_complaint")
+}
+
+model CustomerComplaintImage {
+  id            Int               @id @default(autoincrement())
+  complaintId   Int
+  name          String?
+  imageData     Bytes?
+  imageMimeType String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  complaint     CustomerComplaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  @@map("customer_complaint_image")
+}
+
+model JobProcessMenu {
+  id           Int     @id @default(autoincrement())
+  jobCardId    Int     @map("job_card_id")
+  partNo       String  @map("part_no")
+  partName     String  @map("part_name")
+  processName  String  @map("process_name")
+  processOrder String  @map("process_order")
+  teamId       String? @map("team_id")
+  machineCode  String? @map("machine_code")
+  machineName  String? @map("machine_name")
+  days         String? @map("pm_days")
+  hours        String? @map("pm_hours")
+  minutes      String? @map("minutes")
+  settingTime  String? @map("setting_time")
+  cycleTime    String? @map("cycle_time")
+  handlingTime String? @map("handling_time")
+  idleTime     String? @map("idle_time")
+
+  // Auditing and Soft-Delete flags
+  isActive  Boolean   @default(true) @map("is_active")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?   @map("deleted_by")
+  createdBy String?   @default("System") @map("created_by")
+  updatedBy String?   @map("updated_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  // Relationships
+  jobCard JobCard @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+
+  @@unique([jobCardId, partNo, processName, processOrder])
+  @@index([jobCardId, partNo, isActive])
+  @@map("job_process_menu")
+}
+
+model MachineBreakdown {
+  id                 Int      @id @default(autoincrement())
+  mwrNo              String   @unique
+  machineName        String
+  jobCardNo          String?
+  partNo             String
+  processStage       String?
+  location           String?
+  date               String
+  reportedBy         String
+  priority           String?
+  problemDescription String?
+  status             String   @default("waiting_clearance")
+  actionTaken        String?
+  remark             String?
+  solvedBy           String?
+  solvedDate         String?
+  createdBy          String?  @default("Admin")
+  updatedBy          String?  @default("Admin")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("machine_breakdown")
+}
+
+model ServiceSpare {
+  id                  Int      @id @default(autoincrement())
+  serviceJobNo        String
+  bookingCustomerCode String?
+  customerName        String?
+  customerCode        String?
+  displayOrder        Int?     @default(1)
+  displayDate         String?
+  lastSavedAssName    String?
+  servicePartNo       String?
+  vehicleNo           String?
+  serialNo            String?
+  vehicleModelNo      String?
+  modelSubType        String?
+  vehicleName         String?
+  status              String?  @default("Open")
+  selectedParts       Int[]
+  totalAmount         Float?   @default(0)
+  savedDate           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  items               ServiceSpareItem[]
+
+  @@map("service_spare")
+}
+
+model StockAdjustment {
+  id          Int      @id @default(autoincrement())
+  partNo      String
+  partName    String?
+  qty         Float    @default(0)
+  uom         String?
+  price       Float    @default(0)
+  amount      Float    @default(0)
+  barcode     String?
+  barcodeType String?  @default("Single") // Single, Multiple
+  type        String   // INWARD, OUTWARD
+  remarks     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?  @default("Admin")
+  updatedBy   String?  @default("Admin")
+  version     Int      @default(0)
+
+  @@map("stock_adjustment")
+}
+
+model ServiceSpareItem {
+  id             Int          @id @default(autoincrement())
+  serviceSpareId Int
+  partNo         String
+  partName       String
+  requiredQty    Float
+  issuedQty      Float        @default(0)
+  balanceQty     Float
+  uom            String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  version        Int          @default(0)
+  serviceSpare   ServiceSpare @relation(fields: [serviceSpareId], references: [id], onDelete: Cascade)
+
+  @@map("service_spare_item")
+}
+
+model MaterialIssueHeader {
+  id           Int                   @id @default(autoincrement())
+  issueNo      String                @unique
+  issueDate    DateTime              @default(now())
+  department   String?
+  remarks      String?
+  model        String?
+  inchargeName String?
+  receiverName String?
+  customerName String?
+  customerCode String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  details      MaterialIssueDetail[]
+
+  @@index([createdAt])
+  @@map("material_issue_header")
+}
+
+model MaterialIssueDetail {
+  id               Int                 @id @default(autoincrement())
+  headerId         Int
+  partNo           String
+  partName         String
+  barcode          String
+  bomReqQty        Float
+  prevIssuedQty    Float
+  currentIssuedQty Float
+  updatedIssuedQty Float
+  updatedBalQty    Float
+  user             String?
+  createdAt        DateTime            @default(now())
+  header           MaterialIssueHeader @relation(fields: [headerId], references: [id], onDelete: Cascade)
+
+  @@map("material_issue_detail")
+}
+
+model AuditLog {
+  id           Int      @id @default(autoincrement())
+  userId       Int?
+  username     String?
+  action       String   // "CREATE", "UPDATE", "DELETE"
+  tableName    String   // The table being modified
+  recordId     String   // Primary key / unique identifier of the record
+  oldData      Json?    // Null on CREATE
+  newData      Json?    // Null on DELETE
+  ipAddress    String?
+  userAgent    String?
+  actorContext Json?    @map("actor_context")
+  createdAt    DateTime @default(now())
+
+  @@map("audit_log")
+}
+
+model SystemSetting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+
+  @@map("system_setting")
+}
+
+model NotificationConfig {
+  id              Int                          @id @default(autoincrement())
+  event           String                       @unique // e.g. "purchase-request.created"
+  module          String                       // e.g. "Purchase"
+  action          String                       // e.g. "created"
+  titleTemplate   String                       @map("title_template")
+  messageTemplate String                       @map("message_template")
+  description     String?
+  createdAt       DateTime                     @default(now())
+  rights          NotificationRight[]
+  preferences     UserNotificationPreference[]
+  notifications   Notification[]
+
+  @@map("notification_config")
+}
+
+model NotificationRight {
+  id        Int                @id @default(autoincrement())
+  configId  Int                @map("config_id")
+  role      String             // e.g. "ACCOUNTS", "PURCHASE", "ADMIN" (matches UserCredential.role)
+  createdAt DateTime           @default(now())
+  
+  config    NotificationConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([configId, role])
+  @@index([configId])
+  @@map("notification_right")
+}
+
+model Notification {
+  id              Int                @id @default(autoincrement())
+  userId          Int                @map("user_id")
+  configId        Int                @map("config_id")
+  title           String
+  message         String
+  priority        String             @default("Info") // Info, Success, Warning, Error, Critical
+  isRead          Boolean            @default(false)  @map("is_read")
+  isArchived      Boolean            @default(false)  @map("is_archived")
+  referenceType   String?            @map("reference_type")
+  referenceId     String?            @map("reference_id")
+  referenceNumber String?            @map("reference_number")
+  metadata        Json?
+  createdAt       DateTime           @default(now())  @map("created_at")
+  readAt          DateTime?          @map("read_at")
+  expiresAt       DateTime?          @map("expires_at")
+
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  config          NotificationConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([configId])
+  @@map("notification")
+}
+
+model UserNotificationPreference {
+  id              Int                @id @default(autoincrement())
+  userId          Int                @map("user_id")
+  configId        Int                @map("config_id")
+  popupEnabled    Boolean            @default(true)   @map("popup_enabled")
+  bellEnabled     Boolean            @default(true)   @map("bell_enabled")
+  emailEnabled    Boolean            @default(false)  @map("email_enabled")
+  whatsappEnabled Boolean            @default(false)  @map("whatsapp_enabled")
+  smsEnabled      Boolean            @default(false)  @map("sms_enabled")
+  muted           Boolean            @default(false)
+  updatedAt       DateTime           @updatedAt       @map("updated_at")
+
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  config          NotificationConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, configId])
+  @@index([userId])
+  @@index([configId])
+  @@map("user_notification_preference")
+}
+
+model DeliveryChallan {
+  id              Int                     @id @default(autoincrement())
+  dcNo            String                  @unique
+  financialYear   String
+  date            DateTime                @default(now())
+  partyType       String                  // "Customer" or "Supplier"
+  customerId      Int?
+  supplierId      Int?
+  partyName       String
+  address         String?
+  contPerson      String?
+  contactNo       String?
+  gstNo           String?
+  dcType          String                  // e.g. "Sales", "Returnable", etc.
+  vehicleNo       String?
+  driverName      String?
+  desThrough      String?
+  termsOfDelivery String?
+  totalQty        Float                   @default(0)
+  totalAmount     Float                   @default(0)
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  details         DeliveryChallanDetail[]
+
+  customer        CustomerMaster?         @relation(fields: [customerId], references: [id])
+  supplier        SupplierMaster?         @relation(fields: [supplierId], references: [id])
+
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([supplierId])
+  @@map("delivery_challan")
+}
+
+model DeliveryChallanDetail {
+  id              Int             @id @default(autoincrement())
+  dcId            Int
+  slNo            Int
+  barcode         String?
+  partNo          String
+  partName        String
+  spec            String?
+  brand           String?
+  qty             Float           @default(0)
+  uom             String          @default("PCS")
+  rate            Float           @default(0)
+  amount          Float           @default(0)
+  heatTreatment   String?
+  mGrade          String?
+  rework          String?
+  hrc             String?
+  weight          String?
+  details         String?
+  workType        String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  dc              DeliveryChallan @relation(fields: [dcId], references: [id], onDelete: Cascade)
+
+  @@map("delivery_challan_detail")
+}
+
+
+model OutsourceParts {
+  id         Int                    @id @default(autoincrement())
+  dcNo       String
+  dcDate     DateTime               @default(now())
+  customerId Int?
+  partyName  String
+  address    String?
+  createdBy  String?
+  updatedBy  String?
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+  items      OutsourcePartsDetail[]
+  customer   CustomerMaster?        @relation(fields: [customerId], references: [id])
+
+  @@unique([dcNo])
+  @@map("outsource_parts")
+}
+
+model OutsourcePartsDetail {
+  id         Int            @id @default(autoincrement())
+  registerId Int
+  slNo       Int
+  itemName   String
+  entryDate  DateTime       @default(now())
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  register   OutsourceParts @relation(fields: [registerId], references: [id], onDelete: Cascade)
+
+  @@map("outsource_parts_detail")
+}
+
+model CreditSales {
+  id            Int                 @id @default(autoincrement())
+  billNo        String              @unique
+  billDate      DateTime            @default(now())
+  salesAc       String
+  mode          String
+  dcNo          String?
+  dcDate        DateTime?
+  partyName     String
+  address       String?
+  taxType       String
+  deliveryPlace String?
+  deliveryTo    String?
+  stockReduce   String              @default("No")
+  transport     String?
+  remarks       String?
+  totalQty      Float               @default(0)
+  grossAmt      Float               @default(0)
+  discAmt       Float               @default(0)
+  taxableAmt    Float               @default(0)
+  cgst          Float               @default(0)
+  sgst          Float               @default(0)
+  igst          Float               @default(0)
+  totalTax      Float               @default(0)
+  netAmt        Float               @default(0)
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  details       CreditSalesDetail[]
+
+  @@index([createdAt])
+  @@map("credit_sales")
+}
+
+model CreditSalesDetail {
+  id            Int         @id @default(autoincrement())
+  creditSalesId Int
+  slNo          Int
+  barcode       String?
+  partNo        String
+  partName      String
+  specification String?
+  brand         String?
+  uom           String      @default("PCS")
+  qty           Float       @default(0)
+  rate          Float       @default(0)
+  grossAmt      Float       @default(0)
+  discAmt       Float       @default(0)
+  taxable       Float       @default(0)
+  taxPercent    Float       @default(18)
+  netRate       Float       @default(0)
+  netAmt        Float       @default(0)
+  isManual      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  creditSales   CreditSales @relation(fields: [creditSalesId], references: [id], onDelete: Cascade)
+
+  @@map("credit_sales_detail")
+}
+
+model ServiceBill {
+  id              Int               @id @default(autoincrement())
+  refNo           String            @unique
+  billDate        DateTime          @default(now())
+  serviceNo       String
+  partyName       String
+  cusCode         String?
+  address         String?
+  taxType         String
+  serviceJobNo    String?
+  serialNo        String?
+  vehicleCount    String?
+  vehicleNo       String?
+  vehicleModelNo  String?
+  modelSubType    String?
+  vehicleName     String?
+  servicePartNo   String?
+  materialCost    Float             @default(0)
+  labourCharge    Float             @default(0)
+  gstPer          Float             @default(18)
+  gstAmt          Float             @default(0)
+  billAmt         Float             @default(0)
+  status          String            @default("Open")
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  items           ServiceBillItem[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@map("service_bill")
+}
+
+model ServiceBillItem {
+  id             Int         @id @default(autoincrement())
+  serviceBillId  Int
+  slNo           Int
+  itemName       String
+  barcode        String?
+  uom            String?
+  qty            Float       @default(0)
+  rate           Float       @default(0)
+  labourCharge   Float       @default(0)
+  totalAmt       Float       @default(0)
+  issueNo        String?
+  jobNo          String?
+  receiver       String?
+  miRe           String?
+  bookingCode    String?
+  vehicleType    String?
+  serviceM       String?
+  mItemNa        String?
+  printOrderNo   String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  serviceBill    ServiceBill @relation(fields: [serviceBillId], references: [id], onDelete: Cascade)
+
+  @@map("service_bill_item")
+}
+
+model IndexCreation {
+  id           Int                     @id @default(autoincrement())
+  date         DateTime                @default(now())
+  indexNo      Int                     @unique
+  model        String
+  modelNo      String
+  fileLocation String?
+  fileName     String?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  excelData    IndexCreationExcelData?
+  imagePath     String?
+  imageData     Bytes?
+  imageMimeType String?
+  createdBy     String?
+  updatedBy     String?
+  uploads       IndexCreationUpload[]
+
+  @@map("index_creation")
+}
+
+model IndexCreationExcelData {
+  id              Int      @id @default(autoincrement())
+  indexCreationId Int      @unique
+  excelData       Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  indexCreation IndexCreation @relation(fields: [indexCreationId], references: [id], onDelete: Cascade)
+
+  @@map("index_creation_excel_data")
+}
+
+model IndexCreationUpload {
+  id              Int           @id @default(autoincrement())
+  indexCreationId Int
+  imagePath       String?
+  updatedBy       String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  imageData       Bytes?
+  imageMimeType   String?
+  indexCreation   IndexCreation @relation(fields: [indexCreationId], references: [id], onDelete: Cascade)
+
+  @@map("index_creation_upload")
+}
+
+model TokenBlacklist {
+  id        Int      @id @default(autoincrement())
+  jti       String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("db_token_blacklist")
+}

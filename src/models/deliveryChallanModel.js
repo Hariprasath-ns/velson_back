@@ -119,3 +119,127 @@ export const getAllDeliveryChallans = async (db, page = 1, limit = 20) => {
   ]);
   return { data, total, page, limit };
 };
+
+export const removeDeliveryChallan = async (db, id) => {
+  return db.$transaction(async (tx) => {
+    const dc = await tx.deliveryChallan.findUnique({
+      where: { id },
+      include: { details: true }
+    });
+    if (!dc) return null;
+
+    // Restore stock quantities
+    for (const detail of dc.details) {
+      if (detail.barcode && detail.source && detail.sourceId) {
+        if (detail.source === 'grn') {
+          await tx.gRNDetail.updateMany({
+            where: { id: detail.sourceId },
+            data: {
+              stockQty: { increment: detail.qty }
+            }
+          });
+        } else if (detail.source === 'adjustment') {
+          await tx.stockAdjustment.updateMany({
+            where: { id: detail.sourceId },
+            data: {
+              qty: { increment: detail.qty }
+            }
+          });
+        }
+      }
+    }
+
+    // Delete the header (will cascade delete the details)
+    return tx.deliveryChallan.delete({
+      where: { id }
+    });
+  }, TX_OPTS);
+};
+
+export const updateDeliveryChallan = (db, id, headerData, detailRows) =>
+  db.$transaction(async (tx) => {
+    const oldDc = await tx.deliveryChallan.findUnique({
+      where: { id },
+      include: { details: true }
+    });
+    if (!oldDc) throw new Error('Delivery Challan not found');
+
+    // 1. Revert old stock
+    for (const detail of oldDc.details) {
+      if (detail.barcode && detail.source && detail.sourceId) {
+        if (detail.source === 'grn') {
+          await tx.gRNDetail.updateMany({
+            where: { id: detail.sourceId },
+            data: { stockQty: { increment: detail.qty } }
+          });
+        } else if (detail.source === 'adjustment') {
+          await tx.stockAdjustment.updateMany({
+            where: { id: detail.sourceId },
+            data: { qty: { increment: detail.qty } }
+          });
+        }
+      }
+    }
+
+    // 2. Delete old details
+    await tx.deliveryChallanDetail.deleteMany({ where: { dcId: id } });
+
+    // 3. Apply new stock
+    for (const detail of detailRows) {
+      if (detail.barcode && detail.source && detail.sourceId) {
+        if (detail.source === 'grn') {
+          const grnDet = await tx.gRNDetail.findUnique({ where: { id: detail.sourceId } });
+          if (!grnDet || grnDet.stockQty < detail.qty) {
+            throw new Error(`Insufficient GRN stock for barcode ${detail.barcode}. Available: ${grnDet?.stockQty || 0}`);
+          }
+          await tx.gRNDetail.updateMany({
+            where: { id: detail.sourceId },
+            data: { stockQty: grnDet.stockQty - detail.qty }
+          });
+        } else if (detail.source === 'adjustment') {
+          const adj = await tx.stockAdjustment.findUnique({ where: { id: detail.sourceId } });
+          if (!adj || adj.qty < detail.qty) {
+            throw new Error(`Insufficient stock adjustment stock for barcode ${detail.barcode}. Available: ${adj?.qty || 0}`);
+          }
+          await tx.stockAdjustment.updateMany({
+            where: { id: detail.sourceId },
+            data: { qty: adj.qty - detail.qty }
+          });
+        }
+      }
+    }
+
+    // 4. Update header
+    await tx.deliveryChallan.update({
+      where: { id },
+      data: headerData
+    });
+
+    // 5. Create new details
+    if (detailRows.length > 0) {
+      const dbDetailRows = detailRows.map(({ source, sourceId, ...rest }, i) => ({
+        ...rest,
+        dcId: id,
+        slNo: i + 1
+      }));
+      await tx.deliveryChallanDetail.createMany({
+        data: dbDetailRows,
+      });
+    }
+
+    return tx.deliveryChallan.findUnique({
+      where: { id },
+      include: { customer: true, supplier: true, details: { orderBy: { slNo: 'asc' } } }
+    });
+  }, TX_OPTS);
+
+export const getDeliveryChallanById = async (db, id) => {
+  return db.deliveryChallan.findUnique({
+    where: { id },
+    include: {
+      details: {
+        orderBy: { slNo: 'asc' }
+      }
+    }
+  });
+};

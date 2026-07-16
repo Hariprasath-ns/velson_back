@@ -2,7 +2,7 @@ import express from 'express';
 import Joi from 'joi';
 import { dbSelect } from '../middlewares/dbSelect.js';
 import { validateRequest } from '../middlewares/validateRequest.js';
-import { getNextNo, create, getRecentValues, getAll } from '../controllers/deliveryChallanController.js';
+import { getNextNo, create, getRecentValues, getAll, update, remove, getById } from '../controllers/deliveryChallanController.js';
 
 const router = express.Router();
 
@@ -79,7 +79,10 @@ const createDcSchema = Joi.object({
 // Routes definition
 router.get('/delivery-challan/next-number', getNextNo);
 router.get('/delivery-challan/recent-values', getRecentValues);
+router.get('/delivery-challan/:id', getById);
 router.get('/delivery-challan', getAll);
 router.post('/delivery-challan', validateRequest(createDcSchema), create);
+router.put('/delivery-challan/:id', validateRequest(createDcSchema), update);
+router.delete('/delivery-challan/:id', remove);
 
 export default router;

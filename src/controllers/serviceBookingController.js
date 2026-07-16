@@ -28,6 +28,29 @@ export const create = async (req, res) => {
       throw new BadRequestError('Required fields are missing');
     }
 
+    const activeTempStatus = tempStatus || 'Open';
+    if (activeTempStatus === 'Open') {
+      const conditions = [];
+      if (vehicleNo && vehicleNo !== '—') {
+        conditions.push({ vehicleNo: { equals: vehicleNo, mode: 'insensitive' } });
+      }
+      if (serialNo && serialNo !== '—') {
+        conditions.push({ serialNo: { equals: serialNo, mode: 'insensitive' } });
+      }
+      if (conditions.length > 0) {
+        const duplicate = await req.db.serviceBooking.findFirst({
+          where: {
+            tempStatus: 'Open',
+            customerName: { equals: customerName, mode: 'insensitive' },
+            OR: conditions
+          }
+        });
+        if (duplicate) {
+          throw new BadRequestError('Duplicate entry: An open booking already exists for this Customer and Vehicle.');
+        }
+      }
+    }
+
     const record = await Model.create(req.db, {
       bookingId: parseInt(bookingId, 10),
       bookingDate,
@@ -73,6 +96,29 @@ export const update = async (req, res) => {
       serviceJobNo, vehicleModelNo, modelSubType, vehicleName, 
       status, tempStatus, remarks 
     } = req.body;
+
+    const activeTempStatus = tempStatus || 'Open';
+    if (activeTempStatus === 'Open') {
+      const conditions = [];
+      if (vehicleNo && vehicleNo !== '—') {
+        conditions.push({ vehicleNo: { equals: vehicleNo, mode: 'insensitive' } });
+      }
+      if (serialNo && serialNo !== '—') {
+        conditions.push({ serialNo: { equals: serialNo, mode: 'insensitive' } });
+      }
+      if (conditions.length > 0) {
+        const duplicate = await req.db.serviceBooking.findFirst({
+          where: {
+            tempStatus: 'Open',
+            customerName: { equals: customerName, mode: 'insensitive' },
+            OR: conditions
+          }
+        });
+        if (duplicate && duplicate.id !== id) {
+          throw new BadRequestError('Duplicate entry: An open booking already exists for this Customer and Vehicle.');
+        }
+      }
+    }
 
     const record = await Model.update(req.db, id, {
       bookingId: bookingId ? parseInt(bookingId, 10) : undefined,

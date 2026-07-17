@@ -58,11 +58,14 @@ export const createServiceBill = (db, headerData, detailRows) =>
       });
     }
 
-    // Rule 1: Automatically set corresponding ServiceBooking's tempStatus to 'Close'
+    // Rule 1: Automatically set corresponding ServiceBooking's tempStatus and status to 'Close'
     if (headerData.serviceJobNo) {
       await tx.serviceBooking.updateMany({
         where: { serviceJobNo: headerData.serviceJobNo },
-        data: { tempStatus: "Close" }
+        data: { 
+          tempStatus: "Close",
+          status: "Close"
+        }
       });
     }
 
@@ -105,7 +108,10 @@ export const deleteServiceBill = (db, id) =>
     if (bill && bill.serviceJobNo) {
       await tx.serviceBooking.updateMany({
         where: { serviceJobNo: bill.serviceJobNo },
-        data: { tempStatus: "Open" }
+        data: { 
+          tempStatus: "Open",
+          status: "Pending"
+        }
       });
     }
     return tx.serviceBill.delete({
@@ -145,11 +151,14 @@ export const approveBillCancellation = async (db, id, actorContext) => {
     data: { status: "Cancelled" }
   });
 
-  // Revert tempStatus to 'Open' when cancellation is approved by admin
+  // Revert tempStatus to 'Open' and status to 'Pending' when cancellation is approved by admin
   if (bill.serviceJobNo) {
     await db.serviceBooking.updateMany({
       where: { serviceJobNo: bill.serviceJobNo },
-      data: { tempStatus: "Open" }
+      data: { 
+        tempStatus: "Open",
+        status: "Pending"
+      }
     });
   }
 

@@ -129,3 +129,74 @@ export const getAll = async (req, res) => {
     throw err;
   }
 };
+
+export const update = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const {
+      dcNo, financialYear, date, partyType, customerId, supplierId, partyName: rawPartyName,
+      customerName, address, contPerson, contactNo, gstNo, dcType, vehicleNo, driverName,
+      desThrough, termsOfDelivery, items
+    } = req.body;
+
+    const partyName = rawPartyName || customerName;
+    const detailRows = buildDetailRows(items);
+    const totalQty = detailRows.reduce((sum, item) => sum + item.qty, 0);
+    const totalAmount = detailRows.reduce((sum, item) => sum + item.amount, 0);
+
+    const auditUser = req.user?.username || 'Admin';
+
+    const headerData = {
+      dcNo:            dcNo.trim(),
+      financialYear:   financialYear || '',
+      date:            date ? new Date(date) : new Date(),
+      partyType,
+      customerId:      customerId ? toInt(customerId) : null,
+      supplierId:      supplierId ? toInt(supplierId) : null,
+      partyName:       partyName.trim(),
+      address:         address         || null,
+      contPerson:      contPerson      || null,
+      contactNo:       contactNo       || null,
+      gstNo:           gstNo           || null,
+      dcType:          dcType.trim(),
+      vehicleNo:       vehicleNo       || null,
+      driverName:      driverName      || null,
+      desThrough:      desThrough      || null,
+      termsOfDelivery: termsOfDelivery || null,
+      totalQty,
+      totalAmount,
+      updatedBy:       auditUser,
+    };
+
+    const record = await DcModel.updateDeliveryChallan(req.db, id, headerData, detailRows);
+    res.json({ success: true, data: record });
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const remove = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const record = await DcModel.removeDeliveryChallan(req.db, id);
+    if (!record) {
+      throw new NotFoundError('Delivery Challan not found');
+    }
+    res.json({ success: true });
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getById = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const record = await DcModel.getDeliveryChallanById(req.db, id);
+    if (!record) {
+      throw new NotFoundError('Delivery Challan not found');
+    }
+    res.json({ success: true, data: record });
+  } catch (err) {
+    throw err;
+  }
+};

@@ -15,16 +15,15 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg(new pg.Pool({ connectionString: connString })),
 });
 
-// Ensure these supplier types exist in ReferenceMaster under Supplier_Type
-// const SUPPLIER_TYPE_ENTRIES = [
-//   { code: '001', description: 'Individual' },
-//   { code: '002', description: 'Corporate' },
-//   { code: '003', description: 'Manufacturer' },
-//   { code: '004', description: 'Dealer' },
-//   { code: '005', description: 'Distributor' },
-//   { code: '006', description: 'Trader' },
-//   { code: '007', description: 'Service Provider' },
-// ];
+const SUPPLIER_TYPE_ENTRIES = [
+  { code: '001', description: 'Individual' },
+  { code: '002', description: 'Corporate' },
+  { code: '003', description: 'Manufacturer' },
+  { code: '004', description: 'Dealer' },
+  { code: '005', description: 'Distributor' },
+  { code: '006', description: 'Trader' },
+  { code: '007', description: 'Service Provider' },
+];
 
 const MOCK_SUPPLIERS = [
   {

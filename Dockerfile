@@ -21,6 +21,7 @@ WORKDIR /app
 # Copy only what's needed to run the app
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/seed*.js ./
 COPY package*.json ./

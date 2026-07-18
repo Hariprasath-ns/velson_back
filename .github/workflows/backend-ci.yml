@@ -3,10 +3,10 @@ name: Backend CI - Build & Push to Docker Hub
 on:
   push:
     branches:
-      - sujeeth_docker_v4
+      - docker_v1
   pull_request:
     branches:
-      - sujeeth_docker_v4
+      - docker_v1
 
 permissions:
   contents: read
@@ -69,7 +69,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: sujeeth123/velson-erp-backend
+          images: hariprasathns/velson-backend-v1
           tags: |
             type=sha,prefix=sha-,format=short
             type=raw,value=latest
@@ -89,7 +89,7 @@ jobs:
         run: |
           echo "### Docker Image Published 🚀" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** \`sujeeth123/velson-erp-backend\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`hariprasathns/velson-backend-v1\`" >> $GITHUB_STEP_SUMMARY
           echo "**Tags pushed:**" >> $GITHUB_STEP_SUMMARY
           echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n' | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY

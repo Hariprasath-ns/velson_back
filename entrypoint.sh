@@ -9,6 +9,11 @@ echo "[startup] Starting application..."
 
 echo "[startup] Running database migrations..."
 
+# Set DATABASE_URL for Prisma
+if [ "$DB_ENV" = "docker" ]; then
+  export DATABASE_URL="$DOCKER_DATABASE_URL"
+fi
+
 run_migration() {
   set +e
   OUTPUT=$(npx prisma migrate deploy 2>&1)

@@ -1009,7 +1009,7 @@ model ServiceBooking {
 
 model ServiceDetail {
   id                Int      @id @default(autoincrement())
-  serviceJobNo      String   @unique
+  serviceJobNo      String
   customerCode      String?
   vehicleCount      Int?     @default(1)
   customerName      String?

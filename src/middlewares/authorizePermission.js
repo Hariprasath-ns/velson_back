@@ -195,15 +195,14 @@ export const authorizePermission = async (req, res, next) => {
     // Fallback: Hybrid Access Policy (evaluate role restriction)
     if (roleUpper === "USER" || roleUpper === "STORE") {
       if (HIDDEN_FOR_USER.includes(module)) {
-        if (module === "item-master" && method === "GET") {
-          return next();
-        }
+        if (method === "GET") return next();
         throw new ForbiddenError("Forbidden: insufficient permissions", ErrorCodes.FORBIDDEN);
       }
       return next();
     }
     if (roleUpper === "STAFF" || roleUpper === "ERP") {
       if (HIDDEN_FOR_STAFF.includes(module)) {
+        if (method === "GET") return next();
         throw new ForbiddenError("Forbidden: insufficient permissions", ErrorCodes.FORBIDDEN);
       }
       return next();

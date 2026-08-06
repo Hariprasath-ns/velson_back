@@ -45,7 +45,14 @@ export const getModuleFromPath = (path) => {
   if (cleanPath.startsWith("/api/machine-master")) return "machine-master";
   if (cleanPath.startsWith("/api/contractor-master")) return "contractor-master";
   if (cleanPath.startsWith("/api/process-master")) return "process-master";
-  if (cleanPath.startsWith("/api/reference-master")) return "reference-master";
+  
+  if (cleanPath.startsWith("/api/reference-master")) {
+    const parts = cleanPath.split("/");
+    if (parts.length > 3) return null; // e.g. /api/reference-master/:type (dropdown utility)
+    return "reference-master";
+  }
+
+  if (cleanPath.startsWith("/api/reference-type")) return "reference-master";
   if (cleanPath.startsWith("/api/reference-type")) return "reference-master";
   if (cleanPath.startsWith("/api/part-usage-list")) return "part-usage-list";
   if (cleanPath.startsWith("/api/qc-check-method")) return "qc-check-method";
@@ -59,8 +66,12 @@ export const getModuleFromPath = (path) => {
   if (cleanPath.startsWith("/api/part-number-base")) return "part-number-base";
   if (cleanPath.startsWith("/api/tax-ledger")) return "tax-ledger";
   if (cleanPath.startsWith("/api/tax-master")) return "tax-master-menu";
+  if (cleanPath.startsWith("/api/tax-master")) return "tax-master-menu";
   if (cleanPath.startsWith("/api/item-group")) return "item-group";
-  if (cleanPath.startsWith("/api/item-master")) return "item-master";
+  if (cleanPath.startsWith("/api/item-master")) {
+    if (cleanPath.includes("/download-image") || cleanPath.includes("/download-pdf")) return null;
+    return "item-master";
+  }
   
   if (cleanPath.startsWith("/api/supplier-master")) return "supplier-master";
   if (cleanPath.startsWith("/api/customer-master")) return "customer-master";
@@ -74,11 +85,20 @@ export const getModuleFromPath = (path) => {
   if (cleanPath.startsWith("/api/marketing-log")) return "marketing-log";
   
   if (cleanPath.startsWith("/api/purchase-request")) return "purchase-request";
-  if (cleanPath.startsWith("/api/purchase-master")) return "purchase-order";
+  if (cleanPath.startsWith("/api/purchase-master")) {
+    if (cleanPath.includes("/next-no")) return null;
+    return "purchase-order";
+  }
   
-  if (cleanPath.startsWith("/api/gate-master")) return "gate-entry";
+  if (cleanPath.startsWith("/api/gate-master")) {
+    if (cleanPath.includes("/next-no")) return null;
+    return "gate-entry";
+  }
   if (cleanPath.startsWith("/api/grn-master")) return "grn-entry";
-  if (cleanPath.startsWith("/api/material-request")) return "material-request";
+  if (cleanPath.startsWith("/api/material-request")) {
+    if (cleanPath.includes("/next-no") || cleanPath.includes("/by-no")) return null;
+    return "material-request";
+  }
   
   if (cleanPath.startsWith("/api/receipt-entry")) return "receipt-entry";
   if (cleanPath.startsWith("/api/voucher-entry")) return "voucher-entry";
@@ -94,7 +114,10 @@ export const getModuleFromPath = (path) => {
 
   
   if (cleanPath.startsWith("/api/material-issue")) return "material-issue";
-  if (cleanPath.startsWith("/api/job-card")) return "job-card-entry";
+  if (cleanPath.startsWith("/api/job-card")) {
+    if (cleanPath.includes("/next-no")) return null;
+    return "job-card-entry";
+  }
   if (cleanPath.startsWith("/api/job-process-menu")) return "process-menu";
   if (cleanPath.startsWith("/api/generate-part-number")) return "part-number-base";
   if (cleanPath.startsWith("/api/categories")) return "part-number-base";
@@ -168,6 +191,9 @@ export const authorizePermission = async (req, res, next) => {
     // Fallback: Hybrid Access Policy (evaluate role restriction)
     if (roleUpper === "USER" || roleUpper === "STORE") {
       if (HIDDEN_FOR_USER.includes(module)) {
+        if (module === "item-master" && method === "GET") {
+          return next();
+        }
         throw new ForbiddenError("Forbidden: insufficient permissions", ErrorCodes.FORBIDDEN);
       }
       return next();

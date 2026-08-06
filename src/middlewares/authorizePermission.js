@@ -52,8 +52,12 @@ export const getModuleFromPath = (path) => {
     return "reference-master";
   }
 
-  if (cleanPath.startsWith("/api/reference-type")) return "reference-master";
-  if (cleanPath.startsWith("/api/reference-type")) return "reference-master";
+  if (cleanPath.startsWith("/api/reference-type") || cleanPath.startsWith("/api/reference-types")) {
+    const parts = cleanPath.split("/");
+    if (parts.length > 3) return null; // e.g. /api/reference-types/values/:type (dropdown utility)
+    return "reference-master";
+  }
+
   if (cleanPath.startsWith("/api/part-usage-list")) return "part-usage-list";
   if (cleanPath.startsWith("/api/qc-check-method")) return "qc-check-method";
   if (cleanPath.startsWith("/api/qc-inspection-char")) return "qc-inspection-char";

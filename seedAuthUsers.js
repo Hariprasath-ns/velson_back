@@ -30,8 +30,8 @@ const prisma = new PrismaClient({ adapter });
 
 const USERS = [
   { name: "Administrator", email: "admin@admin.com", password: "Admin@123", role: "admin" },
-  { name: "Staff User",    email: "staff@staff.com", password: "password123", role: "ERP" },
-  { name: "Basic User",   email: "user@user.com",   password: "password123", role: "STORE"  },
+  { name: "Staff User",    email: "staff@velson.com", password: "Staff@123", role: "staff" },
+  { name: "Basic User",   email: "user@user.com",   password: "User@123", role: "user"  },
 ];
 
 async function main() {
@@ -64,7 +64,7 @@ async function main() {
     console.log(`✓ Seeded: ${u.email} (${u.role})`);
   }
 
-  console.log("\nDone. Default password for all accounts: password123");
+  console.log("\nDone. User accounts have been seeded with their respective role-based passwords.");
 }
 
 main()

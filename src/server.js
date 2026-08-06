@@ -6,6 +6,7 @@ import cors from "cors";
 import morgan from "morgan";
 
 import { checkConnections, neonPrisma, dockerPrisma } from "./config/db.js";
+import bcrypt from "bcryptjs";
 import { authenticate } from "./middlewares/auth.js";
 import { requestIdMiddleware, logger } from "./utils/logger.js";
 import { notFoundMiddleware } from "./middlewares/notFoundMiddleware.js";
@@ -90,6 +91,20 @@ app.use(
   })
 );
 
+// ─── Public root routes (no auth, no rate-limit) ────────────────────────────
+// Health check — used by load balancers, Docker healthcheck, and browsers.
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "Velson Backend API is running",
+  });
+});
+
+// Suppress browser favicon requests — respond silently with 204 No Content
+// so they never reach notFoundMiddleware and pollute the error logs.
+app.get("/favicon.ico", (_req, res) => res.status(204).end());
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Rate limit all API requests
 app.use("/api", apiLimiter);
 
@@ -161,11 +176,40 @@ app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 
 
+
+const DEFAULT_USERS = [
+  { name: "Administrator", email: "admin@admin.com", password: "Admin@123",   role: "admin" },
+  { name: "Staff User",    email: "staff@staff.com", password: "password123", role: "ERP"   },
+  { name: "Basic User",   email: "user@user.com",   password: "password123", role: "STORE" },
+];
+
+async function autoSeedAdminUsers() {
+  try {
+    for (const u of DEFAULT_USERS) {
+      const hashed = await bcrypt.hash(u.password, 10);
+      const user = await dockerPrisma.user.upsert({
+        where: { email: u.email },
+        update: { name: u.name },
+        create: { name: u.name, email: u.email },
+      });
+      await dockerPrisma.userCredential.upsert({
+        where: { userId: user.id },
+        update: {},                          // never overwrite existing password/role
+        create: { userId: user.id, username: u.email, password: hashed, role: u.role, isActive: true },
+      });
+    }
+    logger.info("[Seed] Default users ensured.");
+  } catch (err) {
+    logger.warn("[Seed] Auto-seed skipped: " + err.message);
+  }
+}
+
 const PORT = process.env.PORT;
 
 const server = app.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);
   await checkConnections();
+  await autoSeedAdminUsers();
 
   // Purge expired tokens from the blacklist every hour
   setInterval(async () => {

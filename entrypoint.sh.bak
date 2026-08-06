@@ -107,10 +107,10 @@ echo "[startup] Database migrations complete."
 
 if [ "$SEED_DB" = "true" ]; then
 
-  echo "[startup] Running auth user seed..."
+  echo "[startup] Running database seed..."
 
-  node seedAuthUsers.js || {
-    echo "[startup] Warning: auth seed failed (users may already exist)."
+  npm run seed || {
+    echo "[startup] Warning: seed failed."
   }
 
   echo "[startup] Seeding complete."

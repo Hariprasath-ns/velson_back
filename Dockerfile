@@ -27,7 +27,7 @@ COPY --from=builder /app/seed*.js ./
 COPY package*.json ./
 
 COPY entrypoint.sh ./
-RUN chmod +x entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 # Run as non-root for security
 RUN chown -R node:node /app

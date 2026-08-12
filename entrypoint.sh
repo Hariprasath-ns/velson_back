@@ -108,9 +108,23 @@ echo "[startup] Database migrations complete."
 if [ "$SEED_DB" = "true" ]; then
 
   echo "[startup] Running auth user seed..."
-
   node seedAuthUsers.js || {
     echo "[startup] Warning: auth seed failed (users may already exist)."
+  }
+
+  echo "[startup] Running reference type seed..."
+  node seedreferencetypename.js || {
+    echo "[startup] Warning: reference type seed failed."
+  }
+
+  echo "[startup] Running supplier type seed..."
+  node seedSupplierType.js || {
+    echo "[startup] Warning: supplier type seed failed."
+  }
+
+  echo "[startup] Running item group seed..."
+  node seedItemGroupMaster.js || {
+    echo "[startup] Warning: item group seed failed."
   }
 
   echo "[startup] Seeding complete."

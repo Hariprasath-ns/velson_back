@@ -4,7 +4,7 @@ import { defineConfig } from "prisma/config";
 const url =
   process.env.DB_ENV === "neon"
     ? process.env.NEON_DATABASE_URL
-    : process.env.DOCKER_DATABASE_URL;
+    : (process.env.DATABASE_URL || process.env.DOCKER_DATABASE_URL);
 
 const getShadowUrl = (baseUri) => {
   if (!baseUri) return undefined;

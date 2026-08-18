@@ -226,6 +226,12 @@ export const createGRNEntry = (db, headerData, detailRows) =>
         grnbarcode,
       },
     });
+    if (headerData.gateEntryNo) {
+      await tx.gateMaster.updateMany({
+        where: { gateEntryNo: headerData.gateEntryNo },
+        data: { status: 'Closed' },
+      });
+    }
     const expandedDetails = expandDetailRows(detailRows, grnbarcode, barcodeTypeMap);
     if (expandedDetails.length > 0) {
       await tx.gRNDetail.createMany({
@@ -297,6 +303,12 @@ export const updateGRNEntry = (db, id, headerData, detailRows) =>
         grnbarcode,
       },
     });
+    if (headerData.gateEntryNo) {
+      await tx.gateMaster.updateMany({
+        where: { gateEntryNo: headerData.gateEntryNo },
+        data: { status: 'Closed' },
+      });
+    }
     const items = await tx.itemMaster.findMany({
       select: { partNo: true, barcodeType: true },
     });

@@ -43,7 +43,7 @@ export const getAll = async (req, res) => {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 20;
     const result = await GRNModel.getAllGRNEntries(req.db, page, limit);
-    res.json({ success: true, ...result });
+    res.json({ success: true, data: result, total: result.length });
   } catch (err) {
     
     throw err;
@@ -112,6 +112,17 @@ export const create = async (req, res) => {
     };
 
     const record = await GRNModel.createGRNEntry(req.db, headerData, buildDetailRows(items));
+
+    if (headerData.gateEntryNo) {
+      try {
+        await req.db.gateMaster.updateMany({
+          where: { gateEntryNo: headerData.gateEntryNo },
+          data: { status: 'Closed' }
+        });
+      } catch (err) {
+        console.error('Failed to close gate entry upon GRN creation:', err);
+      }
+    }
 
     const actorContext = await getActorContext(req);
     eventBus.publish(SOCKET_EVENTS.GRN_CREATED, {

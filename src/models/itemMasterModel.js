@@ -23,10 +23,12 @@ export const getItemMasters = async (db, { page = 1, limit = 10, search = '' }) 
   const unitIds = [...new Set(items.map(i => i.unitId).filter(Boolean))];
   const gradeIds = [...new Set(items.map(i => i.materialGradeId).filter(Boolean))];
   const qcIds = [...new Set(items.map(i => i.qcTypeId).filter(Boolean))];
+  const taxIds = [...new Set(items.map(i => i.taxId).filter(Boolean))];
 
   let uomMap = {};
   let gradeMap = {};
   let qcMap = {};
+  let taxMap = {};
 
   if (unitIds.length > 0) {
     const uomRows = await db.referenceMaster.findMany({
@@ -52,26 +54,52 @@ export const getItemMasters = async (db, { page = 1, limit = 10, search = '' }) 
     qcMap = Object.fromEntries(qcRows.map(r => [r.id, r.description || r.code]));
   }
 
-  const data = items.map(i => ({
-    ...i,
-    uom: i.unitId ? (uomMap[i.unitId] ?? '') : '',
-    materialGradeName: i.materialGradeId ? (gradeMap[i.materialGradeId] ?? '') : '',
-    qcTypeName: i.qcTypeId ? (qcMap[i.qcTypeId] ?? '') : '',
-    hasImage: !!i.imageMimeType,
-    hasPdf: !!i.pdfMimeType,
-  }));
+  if (taxIds.length > 0) {
+    const taxRows = await db.taxMaster.findMany({
+      where: { id: { in: taxIds } },
+      select: { id: true, taxPercent: true, cgstTax: true, sgstTax: true, igstTax: true },
+    });
+    taxMap = Object.fromEntries(taxRows.map(r => [r.id, r]));
+  }
+
+  const data = items.map(i => {
+    const taxObj = i.taxId ? taxMap[i.taxId] : null;
+    return {
+      ...i,
+      uom: i.unitId ? (uomMap[i.unitId] ?? '') : '',
+      materialGradeName: i.materialGradeId ? (gradeMap[i.materialGradeId] ?? '') : '',
+      qcTypeName: i.qcTypeId ? (qcMap[i.qcTypeId] ?? '') : '',
+      tax: taxObj || null,
+      taxPercent: taxObj?.taxPercent ?? null,
+      gstPer: taxObj?.taxPercent ?? null,
+      hasImage: !!i.imageMimeType,
+      hasPdf: !!i.pdfMimeType,
+    };
+  });
   return { data, total };
 };
 
 export const getItemMasterById = async (db, id) => {
   const item = await db.itemMaster.findUnique({ where: { id } });
-  if (item && item.qcTypeId) {
+  if (!item) return null;
+  if (item.qcTypeId) {
     const ref = await db.referenceMaster.findUnique({
       where: { id: item.qcTypeId },
       select: { description: true, code: true }
     });
     if (ref) {
       item.qcTypeName = ref.description || ref.code;
+    }
+  }
+  if (item.taxId) {
+    const tax = await db.taxMaster.findUnique({
+      where: { id: item.taxId },
+      select: { id: true, taxPercent: true, cgstTax: true, sgstTax: true, igstTax: true }
+    });
+    if (tax) {
+      item.tax = tax;
+      item.taxPercent = tax.taxPercent;
+      item.gstPer = tax.taxPercent;
     }
   }
   return item;

@@ -157,19 +157,26 @@ export const upsertJobCardProcess = async (db, data) => {
     }
   });
 
+  const inDate = data.processInDate || data.workingStartDate || (data.state === 'IN' ? data.processDate : null);
+  const outDate = data.processOutDate || data.workingEndDate || ((data.state === 'OUT' || data.state === 'QC') ? data.processDate : null);
+
   let workingStartDate = undefined;
   let workingEndDate = undefined;
 
-  if (data.state === 'IN') {
-    workingStartDate = data.processDate;
-    workingEndDate = null;
+  if (inDate) {
+    workingStartDate = new Date(inDate);
+  } else if (existing && existing.workingStartDate) {
+    workingStartDate = existing.workingStartDate;
+  } else if (existing && existing.createdAt) {
+    workingStartDate = existing.createdAt;
+  }
+
+  if (outDate) {
+    workingEndDate = new Date(outDate);
   } else if (data.state === 'OUT' || data.state === 'QC') {
-    workingEndDate = data.processDate;
-    if (existing && existing.workingStartDate) {
-      workingStartDate = existing.workingStartDate;
-    } else {
-      workingStartDate = data.processDate;
-    }
+    workingEndDate = existing?.workingEndDate || (existing?.updatedAt ? new Date(existing.updatedAt) : new Date());
+  } else if (data.state === 'IN') {
+    workingEndDate = null;
   } else if (data.state === 'Erase') {
     workingStartDate = null;
     workingEndDate = null;
@@ -197,8 +204,18 @@ export const upsertJobCardProcess = async (db, data) => {
     });
     result = await db.jobCardLineItem.create({
       data: {
-        ...data,
+        jobCardId: data.jobCardId,
         slNo: count + 1,
+        partNo: data.partNo,
+        partName: data.partName || '',
+        processName: data.processName || null,
+        processDate: data.processDate && !isNaN(new Date(data.processDate).getTime()) ? new Date(data.processDate) : (workingStartDate || null),
+        state: data.state || null,
+        empName: data.empName || null,
+        machineName: data.machineName || null,
+        workCenterNo: data.workCenterNo || null,
+        remarks: data.remarks || null,
+        notApplicable: !!data.notApplicable,
         ...(workingStartDate !== undefined && { workingStartDate }),
         ...(workingEndDate !== undefined && { workingEndDate }),
       }

@@ -195,7 +195,7 @@ export const remove = async (req, res) => {
 export const updateProcess = async (req, res) => {
   try {
     const {
-      jobCardId, partNo, partName, processName, processDate, state,
+      jobCardId, partNo, partName, processName, processDate, processInDate, processOutDate, state,
       empName, machineName, workCenterNo, remarks, notApplicable
     } = req.body;
 
@@ -204,12 +204,24 @@ export const updateProcess = async (req, res) => {
     }
 
     const beforeJc = await req.db.jobCard.findUnique({ where: { id: parseInt(jobCardId, 10) } });
+    const parseValidDate = (d) => {
+      if (!d) return null;
+      const parsed = new Date(d);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    const inDateParsed = parseValidDate(processInDate) || parseValidDate(processDate);
+    const outDateParsed = parseValidDate(processOutDate);
+    const procDateParsed = parseValidDate(processDate) || inDateParsed;
+
     const result = await JobCardModel.upsertJobCardProcess(req.db, {
       jobCardId: parseInt(jobCardId, 10),
       partNo,
       partName: partName || '',
       processName,
-      processDate: processDate ? new Date(processDate) : null,
+      processDate: procDateParsed,
+      processInDate: inDateParsed,
+      processOutDate: outDateParsed,
       state: state || null,
       empName: empName || null,
       machineName: machineName || null,

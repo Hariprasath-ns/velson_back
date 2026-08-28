@@ -331,4 +331,17 @@ export const updateGRNEntry = (db, id, headerData, detailRows) =>
   }, TX_OPTS);
 
 export const deleteGRNEntry = (db, id) =>
-  db.gRNMaster.delete({ where: { id } });
+  db.$transaction(async (tx) => {
+    const grn = await tx.gRNMaster.findUnique({
+      where: { id },
+      select: { id: true, gateEntryNo: true, poNo: true }
+    });
+    if (grn && grn.gateEntryNo) {
+      await tx.gateMaster.updateMany({
+        where: { gateEntryNo: grn.gateEntryNo },
+        data: { status: 'Open' },
+      });
+    }
+    await tx.gRNDetail.deleteMany({ where: { grnId: id } });
+    return tx.gRNMaster.delete({ where: { id } });
+  }, TX_OPTS);

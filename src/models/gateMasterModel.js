@@ -39,6 +39,41 @@ export const getGateEntryById = (db, id) =>
 
 const TX_OPTS = { maxWait: 10000, timeout: 20000 };
 
+const syncPoStatusAfterGateEntry = async (tx, poId, poNo) => {
+  if (!poId && !poNo) return;
+  const po = await tx.purchaseMaster.findFirst({
+    where: poId ? { id: poId } : { poNo: poNo },
+    include: { details: true }
+  });
+  if (!po || !po.details || po.details.length === 0) return;
+
+  const allGateEntries = await tx.gateMaster.findMany({
+    where: { poNo: po.poNo },
+    include: { details: true }
+  });
+
+  const recQtyMap = {};
+  allGateEntries.forEach(ge => {
+    (ge.details || []).forEach(d => {
+      if (d.itemCode) {
+        recQtyMap[d.itemCode] = (recQtyMap[d.itemCode] || 0) + (d.recQty || 0);
+      }
+    });
+  });
+
+  const isPartial = po.details.some(d => {
+    const totalRec = recQtyMap[d.itemCode] || 0;
+    return totalRec < (d.qty || 0);
+  });
+
+  if (isPartial) {
+    await tx.purchaseMaster.update({
+      where: { id: po.id },
+      data: { status: 'Pending' }
+    });
+  }
+};
+
 export const createGateEntry = (db, headerData, detailRows) =>
   db.$transaction(async (tx) => {
     const master = await tx.gateMaster.create({ data: headerData });
@@ -47,6 +82,7 @@ export const createGateEntry = (db, headerData, detailRows) =>
         data: detailRows.map((r, i) => ({ ...r, gateId: master.id, slNo: i + 1 })),
       });
     }
+    await syncPoStatusAfterGateEntry(tx, headerData.poId, headerData.poNo);
     return tx.gateMaster.findUnique({
       where: { id: master.id },
       include: { details: { orderBy: { slNo: 'asc' } } },
@@ -62,6 +98,7 @@ export const updateGateEntry = (db, id, headerData, detailRows) =>
         data: detailRows.map((r, i) => ({ ...r, gateId: id, slNo: i + 1 })),
       });
     }
+    await syncPoStatusAfterGateEntry(tx, headerData.poId, headerData.poNo);
     return tx.gateMaster.findUnique({
       where: { id },
       include: { details: { orderBy: { slNo: 'asc' } } },

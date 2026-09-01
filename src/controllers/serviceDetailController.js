@@ -7,10 +7,14 @@ import { getActorContext } from '../utils/actorContext.js';
 
 export const getAll = async (req, res) => {
   try {
-    const data = await Model.getAll(req.db);
+    const data = await req.db.serviceDetail.findMany({
+      where: {
+        NOT: { status: 'Inactive' }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
     res.json({ success: true, data });
   } catch (err) {
-    
     throw err;
   }
 };

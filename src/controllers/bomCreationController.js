@@ -31,8 +31,45 @@ export const create = async (req, res) => {
       throw new BadRequestError('serviceJobNo is required');
     }
 
+    // Enforce uniqueness for Service Job No. + File Name / Assembly Part No
+    if (fileName || assemblyPartNo) {
+      const existing = await req.db.bomCreation.findFirst({
+        where: {
+          serviceJobNo: String(serviceJobNo).trim(),
+          ...(fileName ? { fileName: String(fileName).trim() } : {}),
+          ...(assemblyPartNo && !fileName ? { assemblyPartNo: String(assemblyPartNo).trim() } : {}),
+        }
+      });
+      if (existing) {
+        throw new ConflictError(`BOM already exists for Service Job No "${serviceJobNo}"${fileName ? ` and File "${fileName}"` : ''}${assemblyPartNo ? ` and Assembly "${assemblyPartNo}"` : ''}. Duplicate entries are not allowed.`);
+      }
+    }
+
+    // Auto-resolve unique bomNo if not provided or already exists
+    let finalBomNo = bomNo ? String(bomNo).trim() : '';
+    if (!finalBomNo) {
+      const allBoms = await req.db.bomCreation.findMany({ select: { bomNo: true } });
+      const nums = allBoms.map(r => {
+        const m = (r.bomNo || '').match(/\d+$/);
+        return m ? parseInt(m[0], 10) : null;
+      }).filter(n => n !== null && !isNaN(n) && n < 10000000);
+      const max = nums.length > 0 ? Math.max(...nums) : 0;
+      finalBomNo = `BOM-${max + 1}`;
+    } else {
+      const exists = await req.db.bomCreation.findUnique({ where: { bomNo: finalBomNo } });
+      if (exists) {
+        const allBoms = await req.db.bomCreation.findMany({ select: { bomNo: true } });
+        const nums = allBoms.map(r => {
+          const m = (r.bomNo || '').match(/\d+$/);
+          return m ? parseInt(m[0], 10) : null;
+        }).filter(n => n !== null && !isNaN(n) && n < 10000000);
+        const max = nums.length > 0 ? Math.max(...nums) : 0;
+        finalBomNo = `BOM-${max + 1}`;
+      }
+    }
+
     const record = await BomModel.createBomCreation(req.db, {
-      bomNo: bomNo || `BOM-${Date.now()}`,
+      bomNo: finalBomNo,
       date: date ? new Date(date) : new Date(),
       customerName: String(customerName).trim(),
       customerCode: customerCode || null,

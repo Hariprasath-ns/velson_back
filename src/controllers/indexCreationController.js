@@ -89,6 +89,20 @@ export const create = async (req, res) => {
       throw new BadRequestError('modelNo is required');
     }
 
+    const trimmedModel = String(model).trim();
+    const trimmedModelNo = String(modelNo).trim();
+
+    // Check for duplicate model and modelNo
+    const existing = await req.db.indexCreation.findFirst({
+      where: {
+        model: { equals: trimmedModel, mode: 'insensitive' },
+        modelNo: { equals: trimmedModelNo, mode: 'insensitive' },
+      }
+    });
+    if (existing) {
+      throw new BadRequestError(`Index with Model "${trimmedModel}" and Model No "${trimmedModelNo}" already exists`);
+    }
+
     // Auto-generate indexNo
     const maxIndex = await req.db.indexCreation.aggregate({
       _max: { indexNo: true }
@@ -106,8 +120,8 @@ export const create = async (req, res) => {
     const record = await IndexModel.createIndexCreation(req.db, {
       date: date ? new Date(date) : new Date(),
       indexNo: nextIndexNo,
-      model: String(model).trim(),
-      modelNo: String(modelNo).trim(),
+      model: trimmedModel,
+      modelNo: trimmedModelNo,
       fileLocation: fileLocation || null,
       fileName: fileName || null,
       createdBy: createdBy || 'Admin',
@@ -129,6 +143,32 @@ export const update = async (req, res) => {
       date, model, modelNo, fileLocation, fileName, excelData, fileContentBase64, updatedBy
     } = req.body;
 
+    const currentRecord = await IndexModel.getIndexCreationById(req.db, id);
+    if (!currentRecord) {
+      throw new NotFoundError('Index record not found');
+    }
+
+    const checkModel = model !== undefined ? String(model).trim() : currentRecord.model;
+    const checkModelNo = modelNo !== undefined ? String(modelNo).trim() : currentRecord.modelNo;
+
+    if (!checkModel) {
+      throw new BadRequestError('model is required');
+    }
+    if (!checkModelNo) {
+      throw new BadRequestError('modelNo is required');
+    }
+
+    const duplicate = await req.db.indexCreation.findFirst({
+      where: {
+        id: { not: id },
+        model: { equals: checkModel, mode: 'insensitive' },
+        modelNo: { equals: checkModelNo, mode: 'insensitive' },
+      }
+    });
+    if (duplicate) {
+      throw new BadRequestError(`Index with Model "${checkModel}" and Model No "${checkModelNo}" already exists`);
+    }
+
     let parsedExcelData = undefined;
     if (excelData !== undefined) {
       parsedExcelData = excelData;
@@ -138,8 +178,8 @@ export const update = async (req, res) => {
 
     const updatePayload = {
       date: date ? new Date(date) : undefined,
-      model: model ? String(model).trim() : undefined,
-      modelNo: modelNo ? String(modelNo).trim() : undefined,
+      model: checkModel,
+      modelNo: checkModelNo,
       fileLocation: fileLocation || null,
       fileName: fileName || null,
       updatedBy: updatedBy || 'Admin',

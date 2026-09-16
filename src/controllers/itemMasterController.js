@@ -81,11 +81,11 @@ const buildData = (body, isUpdate = false) => {
 
 export const getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '' } = req.query;
+    const { page = 1, limit = 10000, search = '' } = req.query;
     const result = await ItemMasterModel.getItemMasters(req.db, { page, limit, search });
     res.json({ success: true, ...result });
   } catch (err) {
-    
+
     throw err;
   }
 };
@@ -97,7 +97,7 @@ export const getOne = async (req, res) => {
     if (!data) throw new NotFoundError('Item not found');
     res.json({ success: true, data });
   } catch (err) {
-    
+
     throw err;
   }
 };
@@ -127,7 +127,7 @@ export const create = async (req, res) => {
     if (err.code === 'P2002') {
       throw new BadRequestError('Part number already exists');
     }
-    
+
     throw err;
   }
 };
@@ -175,7 +175,7 @@ export const update = async (req, res) => {
     if (err.code === 'P2002') {
       throw new BadRequestError('Part number already exists');
     }
-    
+
     throw err;
   }
 };
@@ -204,7 +204,7 @@ export const remove = async (req, res) => {
     if (err.code === 'P2025') {
       throw new NotFoundError('Item not found');
     }
-    
+
     throw err;
   }
 };
@@ -241,7 +241,7 @@ export const uploadFiles = async (req, res) => {
     });
     res.json({ success: true, data: record });
   } catch (err) {
-    
+
     throw err;
   }
 };
@@ -252,7 +252,7 @@ export const getUploads = async (req, res) => {
     const data = await ItemMasterModel.getUploadsByItemId(req.db, id);
     res.json({ success: true, data });
   } catch (err) {
-    
+
     throw err;
   }
 };
@@ -270,7 +270,7 @@ export const downloadImage = async (req, res) => {
     res.set('Content-Disposition', `inline; filename="item_${id}_image"`);
     res.send(item.imageData);
   } catch (err) {
-    
+
     throw err;
   }
 };
@@ -288,7 +288,7 @@ export const downloadPdf = async (req, res) => {
     res.set('Content-Disposition', `inline; filename="item_${id}_document.pdf"`);
     res.send(item.pdfData);
   } catch (err) {
-    
+
     throw err;
   }
 };
@@ -306,7 +306,7 @@ export const downloadUploadImage = async (req, res) => {
     res.set('Content-Disposition', `inline; filename="upload_${id}_image"`);
     res.send(item.imageData);
   } catch (err) {
-    
+
     throw err;
   }
 };
@@ -324,7 +324,7 @@ export const downloadUploadPdf = async (req, res) => {
     res.set('Content-Disposition', `inline; filename="upload_${id}_document.pdf"`);
     res.send(item.pdfData);
   } catch (err) {
-    
+
     throw err;
   }
 };

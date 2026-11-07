@@ -91,6 +91,13 @@ const seedData = [
   { referenceType: "QC_Check_Method", code: "002", description: "Visual Check", updatedBy: "QUALITY" },
   { referenceType: "QC_Check_Method", code: "003", description: "Drawing", updatedBy: "QUALITY" },
 
+  // Specification Type
+  { referenceType: "Specification Type", code: "001", description: "Number", updatedBy: "QUALITY" },
+  { referenceType: "Specification Type", code: "002", description: "Text", updatedBy: "QUALITY" },
+  { referenceType: "Specification Type", code: "003", description: "Equal", updatedBy: "QUALITY" },
+  { referenceType: "Specification Type", code: "004", description: "Minimum and Maximum", updatedBy: "QUALITY" },
+
+
   //Barcode_Type
    { referenceType: "Barcode_Type", code: "001", description: "Single", updatedBy: "admin" },
   { referenceType: "Barcode_Type", code: "002", description: "Multiple", updatedBy: "admin" },

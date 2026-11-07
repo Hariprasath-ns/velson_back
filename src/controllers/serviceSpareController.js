@@ -3,6 +3,7 @@ import { BadRequestError, NotFoundError } from "../middlewares/customErrors.js";
 import { eventBus } from '../services/eventBus.js';
 import { SOCKET_EVENTS } from '../utils/socketEvents.js';
 import { getActorContext } from '../utils/actorContext.js';
+import { checkBookingNotClosed } from '../utils/bookingCheck.js';
 
 export const getAll = async (req, res) => {
   try {
@@ -39,6 +40,9 @@ export const create = async (req, res) => {
     if (!serviceJobNo) {
       throw new BadRequestError('serviceJobNo is required');
     }
+
+    // Check if Booking Entry is closed against this serviceJobNo
+    await checkBookingNotClosed(req.db, serviceJobNo);
 
     const record = await Model.create(req.db, {
       serviceJobNo,
@@ -90,6 +94,10 @@ export const update = async (req, res) => {
       savedDate,
       items
     } = req.body;
+
+    if (serviceJobNo) {
+      await checkBookingNotClosed(req.db, serviceJobNo);
+    }
 
     const record = await Model.update(req.db, id, {
       serviceJobNo,

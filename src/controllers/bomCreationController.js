@@ -3,6 +3,7 @@ import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, Conf
 import { eventBus } from '../services/eventBus.js';
 import { SOCKET_EVENTS } from '../utils/socketEvents.js';
 import { getActorContext } from '../utils/actorContext.js';
+import { checkBookingNotClosed } from '../utils/bookingCheck.js';
 
 
 export const getAll = async (req, res) => {
@@ -30,6 +31,9 @@ export const create = async (req, res) => {
     if (!serviceJobNo || !String(serviceJobNo).trim()) {
       throw new BadRequestError('serviceJobNo is required');
     }
+
+    // Check if Booking Entry is closed against this serviceJobNo
+    await checkBookingNotClosed(req.db, serviceJobNo);
 
     // Enforce uniqueness for Service Job No. + File Name / Assembly Part No
     if (fileName || assemblyPartNo) {
@@ -152,38 +156,6 @@ export const update = async (req, res) => {
 export const remove = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const existing = await req.db.bomCreation.findUnique({ where: { id } });
-
-    if (existing) {
-      const jobNo = existing.serviceJobNo ? String(existing.serviceJobNo).trim() : null;
-      const assPartNo = existing.assemblyPartNo ? String(existing.assemblyPartNo).trim() : null;
-      const bomNo = existing.bomNo ? String(existing.bomNo).trim() : null;
-
-      if (jobNo) {
-        // Find serviceDetail records matching this serviceJobNo
-        const matchingServiceDetails = await req.db.serviceDetail.findMany({
-          where: { serviceJobNo: jobNo }
-        });
-
-        for (const sd of matchingServiceDetails) {
-          const checked = Array.isArray(sd.checkedAssemblies) ? sd.checkedAssemblies : [];
-          const matchesAssembly = (assPartNo && (sd.servicePartNo === assPartNo || checked.includes(assPartNo))) ||
-                                  (bomNo && (sd.servicePartNo === bomNo || checked.includes(bomNo))) ||
-                                  matchingServiceDetails.length === 1;
-
-          if (matchesAssembly) {
-            await req.db.serviceDetail.delete({ where: { id: sd.id } }).catch(() => {});
-          }
-        }
-
-        // Check if any serviceDetail remain for this job
-        const remainingSd = await req.db.serviceDetail.count({ where: { serviceJobNo: jobNo } });
-        if (remainingSd === 0) {
-          await req.db.serviceSpare.deleteMany({ where: { serviceJobNo: jobNo } }).catch(() => {});
-        }
-      }
-    }
-
     await BomModel.deleteBomCreation(req.db, id);
     res.json({ success: true });
   } catch (err) {

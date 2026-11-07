@@ -61,6 +61,7 @@ export const getModuleFromPath = (path) => {
   if (cleanPath.startsWith("/api/part-usage-list")) return "part-usage-list";
   if (cleanPath.startsWith("/api/qc-check-method")) return "qc-check-method";
   if (cleanPath.startsWith("/api/qc-inspection-char")) return "qc-inspection-char";
+  if (cleanPath.startsWith("/api/qc-entry-against-grn")) return "qc-entry-against-grn";
   if (cleanPath.startsWith("/api/qc-standard-master")) return "qc-standard-master";
   if (cleanPath.startsWith("/api/auto-po")) return "auto-po";
   if (cleanPath.startsWith("/api/system-info-master")) return "system-info-master";

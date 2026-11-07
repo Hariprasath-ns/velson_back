@@ -15,7 +15,12 @@ export const getItemMasters = async (db, { page = 1, limit = 10, search = '' }) 
       skip,
       take: Number(limit),
       orderBy: { id: 'desc' },
-      omit: { imageData: true, pdfData: true }
+      omit: { imageData: true, pdfData: true },
+      include: {
+        uploads: {
+          omit: { imageData: true, pdfData: true }
+        }
+      }
     }),
     db.itemMaster.count({ where }),
   ]);
@@ -24,11 +29,15 @@ export const getItemMasters = async (db, { page = 1, limit = 10, search = '' }) 
   const gradeIds = [...new Set(items.map(i => i.materialGradeId).filter(Boolean))];
   const qcIds = [...new Set(items.map(i => i.qcTypeId).filter(Boolean))];
   const taxIds = [...new Set(items.map(i => i.taxId).filter(Boolean))];
+  const itemTypeIds = [...new Set(items.map(i => i.itemTypeId).filter(Boolean))];
+  const modelIds = [...new Set(items.map(i => i.modelId).filter(Boolean))];
 
   let uomMap = {};
   let gradeMap = {};
   let qcMap = {};
   let taxMap = {};
+  let itemTypeMap = {};
+  let modelMap = {};
 
   if (unitIds.length > 0) {
     const uomRows = await db.referenceMaster.findMany({
@@ -62,18 +71,36 @@ export const getItemMasters = async (db, { page = 1, limit = 10, search = '' }) 
     taxMap = Object.fromEntries(taxRows.map(r => [r.id, r]));
   }
 
+  if (itemTypeIds.length > 0) {
+    const itemTypeRows = await db.referenceMaster.findMany({
+      where: { id: { in: itemTypeIds } },
+      select: { id: true, description: true },
+    });
+    itemTypeMap = Object.fromEntries(itemTypeRows.map(r => [r.id, r.description]));
+  }
+
+  if (modelIds.length > 0) {
+    const modelRows = await db.referenceMaster.findMany({
+      where: { id: { in: modelIds } },
+      select: { id: true, description: true, code: true },
+    });
+    modelMap = Object.fromEntries(modelRows.map(r => [r.id, r.description || r.code]));
+  }
+
   const data = items.map(i => {
     const taxObj = i.taxId ? taxMap[i.taxId] : null;
     return {
       ...i,
       uom: i.unitId ? (uomMap[i.unitId] ?? '') : '',
+      modelName: i.modelId ? (modelMap[i.modelId] ?? '') : '',
       materialGradeName: i.materialGradeId ? (gradeMap[i.materialGradeId] ?? '') : '',
       qcTypeName: i.qcTypeId ? (qcMap[i.qcTypeId] ?? '') : '',
+      itemTypeName: i.itemTypeId ? (itemTypeMap[i.itemTypeId] ?? '') : '',
       tax: taxObj || null,
       taxPercent: taxObj?.taxPercent ?? null,
       gstPer: taxObj?.taxPercent ?? null,
-      hasImage: !!i.imageMimeType,
-      hasPdf: !!i.pdfMimeType,
+      hasImage: !!i.imageMimeType || (i.uploads && i.uploads.some(u => u.imageMimeType)),
+      hasPdf: !!i.pdfMimeType || (i.uploads && i.uploads.some(u => u.pdfMimeType)),
     };
   });
   return { data, total };

@@ -26,6 +26,9 @@ const buildDetailRows = (items = []) =>
     finalPrice:     toFloat(item.finalPrice),
     taxPer:         toFloat(item.taxPer),
     netAmt:         toFloat(item.netAmt),
+    barcode:        item.barcode        || null,
+    barcodeType:    item.barcodeType    || null,
+    barcodes:       Array.isArray(item.barcodes) ? item.barcodes : null,
   }));
 
 export const getNextNo = async (req, res) => {
@@ -42,7 +45,8 @@ export const getAll = async (req, res) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 20;
-    const result = await GRNModel.getAllGRNEntries(req.db, page, limit);
+    const includeMaterialInward = req.query.includeMaterialInward === 'true';
+    const result = await GRNModel.getAllGRNEntries(req.db, page, limit, { includeMaterialInward });
     res.json({ success: true, data: result, total: result.length });
   } catch (err) {
     
@@ -148,6 +152,21 @@ export const create = async (req, res) => {
             actorContext
           });
         }
+        if (detail.qcType === 'STORE') {
+          eventBus.publish(SOCKET_EVENTS.STOCK_ADJUSTED, {
+            partNo: detail.itemCode,
+            qty: detail.qty,
+            uom: detail.unit,
+            type: "INWARD",
+            priority: "Success",
+            referenceType: "grn",
+            referenceId: record.id,
+            referenceNumber: record.grnNo,
+            userId: req.user?.id,
+            username: req.user?.email || null,
+            actorContext
+          });
+        }
       }
     }
 
@@ -238,6 +257,21 @@ export const update = async (req, res) => {
             barcode: detail.barcode,
             partNo: detail.itemCode,
             userId: req.user?.id,
+            actorContext
+          });
+        }
+        if (detail.qcType === 'STORE') {
+          eventBus.publish(SOCKET_EVENTS.STOCK_ADJUSTED, {
+            partNo: detail.itemCode,
+            qty: detail.qty,
+            uom: detail.unit,
+            type: "INWARD",
+            priority: "Success",
+            referenceType: "grn",
+            referenceId: record.id,
+            referenceNumber: record.grnNo,
+            userId: req.user?.id,
+            username: req.user?.email || null,
             actorContext
           });
         }

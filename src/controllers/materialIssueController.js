@@ -1,6 +1,7 @@
 import * as Model from '../models/materialIssueModel.js';
 import { BadRequestError } from '../middlewares/customErrors.js';
 import { getActorContext } from '../utils/actorContext.js';
+import { checkBookingNotClosed } from '../utils/bookingCheck.js';
 
 export const getNextNo = async (req, res, next) => {
   try {
@@ -14,11 +15,25 @@ export const getNextNo = async (req, res, next) => {
 export const getBOMItems = async (req, res, next) => {
   try {
     const { servicePartNo, serviceJobNo } = req.query;
-    if (!serviceJobNo) {
-      throw new BadRequestError('serviceJobNo is a required parameter');
+    if (!serviceJobNo && !servicePartNo) {
+      throw new BadRequestError('serviceJobNo or servicePartNo is required');
     }
     const partNoParam = (servicePartNo === '(Unassigned)' || servicePartNo === 'null' || !servicePartNo) ? null : servicePartNo;
     const data = await Model.getBOMItems(req.db, partNoParam, serviceJobNo);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getIssuedItems = async (req, res, next) => {
+  try {
+    const { servicePartNo, serviceJobNo } = req.query;
+    if (!serviceJobNo && !servicePartNo) {
+      throw new BadRequestError('serviceJobNo or servicePartNo is required');
+    }
+    const partNoParam = (servicePartNo === '(Unassigned)' || servicePartNo === 'null' || !servicePartNo) ? null : servicePartNo;
+    const data = await Model.getIssuedItems(req.db, partNoParam, serviceJobNo);
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -41,15 +56,29 @@ export const getBarcodes = async (req, res, next) => {
 export const createIssue = async (req, res, next) => {
   try {
     const { header, details } = req.body;
-    if (!header || !details || !Array.isArray(details)) {
-      throw new BadRequestError('header and details array are required');
+    if (!header) {
+      throw new BadRequestError('header is required');
     }
-    if (!header.issueNo || !header.serviceJobNo || !header.servicePartNo) {
-      throw new BadRequestError('issueNo, serviceJobNo, and servicePartNo are required in header');
+    if (!details || !Array.isArray(details) || details.length === 0) {
+      throw new BadRequestError('details array with at least one item is required');
+    }
+
+    // Check if Booking Entry is closed against this serviceJobNo
+    const jobNoToCheck = header.serviceJobNo || details.find(d => d.serviceJobNo)?.serviceJobNo;
+    if (jobNoToCheck) {
+      await checkBookingNotClosed(req.db, jobNoToCheck);
+    }
+    if (!header.issueNo) {
+      const nextNo = await Model.getNextIssueNo(req.db);
+      header.issueNo = nextNo.issueNo;
     }
     for (const d of details) {
-      if (!d.partNo || !d.barcode || !d.currentIssuedQty || !d.source || !d.sourceId) {
-        throw new BadRequestError('partNo, barcode, currentIssuedQty, source, and sourceId are required for all detail items');
+      if (!d.partNo) {
+        throw new BadRequestError('partNo is required for all detail items');
+      }
+      const q = Number(d.currentIssuedQty ?? d.qty);
+      if (isNaN(q) || q <= 0) {
+        throw new BadRequestError(`Invalid issue quantity for part ${d.partNo}: must be greater than 0. Negative or zero quantities are not allowed.`);
       }
     }
 
@@ -82,6 +111,26 @@ export const getBarcodeDetails = async (req, res, next) => {
     if (!data) {
       return res.status(404).json({ success: false, message: 'Barcode not found' });
     }
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deductStock = async (req, res, next) => {
+  try {
+    const { partNo, barcode, qty, source, sourceId } = req.body;
+    const data = await Model.deductBarcodeStock(req.db, { partNo, barcode, qty, source, sourceId });
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const restoreStock = async (req, res, next) => {
+  try {
+    const { partNo, barcode, qty, source, sourceId } = req.body;
+    const data = await Model.restoreBarcodeStock(req.db, { partNo, barcode, qty, source, sourceId });
     res.json({ success: true, data });
   } catch (err) {
     next(err);

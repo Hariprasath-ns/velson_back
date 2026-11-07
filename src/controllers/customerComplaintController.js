@@ -28,7 +28,7 @@ const getFinancialYear = (date = new Date()) => {
 export const getAll = async (req, res) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 20;
+    const limit = req.query.limit ? parseInt(req.query.limit, 10) : 1000;
     const result = await CustomerComplaintModel.getAllComplaints(req.db, page, limit);
     res.json({ success: true, ...result });
   } catch (err) {
@@ -59,6 +59,33 @@ export const getById = async (req, res) => {
   }
 };
 
+const validateComplaintInputs = (mobileNo, alternateNo, emailId) => {
+  if (!mobileNo || !String(mobileNo).trim()) {
+    throw new BadRequestError('Mobile number is required');
+  }
+  const cleanMobile = String(mobileNo).trim();
+  if (!/^[6-9]\d{9}$/.test(cleanMobile)) {
+    throw new BadRequestError('Invalid mobile number: must be 10 digits starting with 6, 7, 8, or 9');
+  }
+
+  if (alternateNo && String(alternateNo).trim()) {
+    const cleanAlt = String(alternateNo).trim();
+    if (!/^[6-9]\d{9}$/.test(cleanAlt)) {
+      throw new BadRequestError('Invalid alternate mobile number: must be 10 digits starting with 6, 7, 8, or 9');
+    }
+    if (cleanAlt === cleanMobile) {
+      throw new BadRequestError('Alternate mobile number cannot be the same as primary mobile number');
+    }
+  }
+
+  if (emailId && String(emailId).trim()) {
+    const cleanEmail = String(emailId).trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      throw new BadRequestError('Invalid email ID format');
+    }
+  }
+};
+
 export const create = async (req, res) => {
   try {
     const {
@@ -67,12 +94,14 @@ export const create = async (req, res) => {
       mobileNo, alternateNo, emailId, complaintType, serviceType,
       workCompleteDate, complaintClosedDate, natureOfComplaint, actionThrough,
       attenderName, attenDate, finalDate, actionTaken, preventiveMeasure,
-      feedbackSatisfaction, status, vehicleCount, createdBy
+      feedbackSatisfaction, status, approvalStatus, vehicleCount, createdBy
     } = req.body;
 
     if (!customerName || !customerName.trim()) {
       throw new BadRequestError('customerName is required');
     }
+
+    validateComplaintInputs(mobileNo, alternateNo, emailId);
 
     const resolvedCcNo = ccNo && ccNo.trim()
       ? ccNo.trim()
@@ -106,6 +135,7 @@ export const create = async (req, res) => {
       preventiveMeasure: preventiveMeasure || null,
       feedbackSatisfaction: feedbackSatisfaction || null,
       status: status || 'Open',
+      approvalStatus: approvalStatus || 'Pending Approval',
       vehicleCount: vehicleCount ? String(vehicleCount) : null,
       createdBy: createdBy || 'Admin',
       updatedBy: createdBy || 'Admin'
@@ -140,12 +170,14 @@ export const update = async (req, res) => {
       mobileNo, alternateNo, emailId, complaintType, serviceType,
       workCompleteDate, complaintClosedDate, natureOfComplaint, actionThrough,
       attenderName, attenDate, finalDate, actionTaken, preventiveMeasure,
-      feedbackSatisfaction, status, vehicleCount, updatedBy
+      feedbackSatisfaction, status, approvalStatus, vehicleCount, updatedBy
     } = req.body;
 
     if (!customerName || !customerName.trim()) {
       throw new BadRequestError('customerName is required');
     }
+
+    validateComplaintInputs(mobileNo, alternateNo, emailId);
 
     const original = await CustomerComplaintModel.getComplaintById(req.db, id);
     const record = await CustomerComplaintModel.updateComplaint(req.db, id, {
@@ -176,6 +208,7 @@ export const update = async (req, res) => {
       preventiveMeasure: preventiveMeasure || null,
       feedbackSatisfaction: feedbackSatisfaction || null,
       status: status || 'Open',
+      approvalStatus: approvalStatus !== undefined ? (approvalStatus || null) : undefined,
       vehicleCount: vehicleCount ? String(vehicleCount) : null,
       updatedBy: updatedBy || 'Admin'
     });
@@ -216,6 +249,54 @@ export const update = async (req, res) => {
     throw err;
   }
 };
+
+export const updateApprovalStatus = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { approvalStatus } = req.body;
+    if (!approvalStatus || !['Pending Approval', 'Approved', 'Rejected'].includes(approvalStatus)) {
+      throw new BadRequestError("approvalStatus must be 'Pending Approval', 'Approved', or 'Rejected'");
+    }
+
+    const original = await CustomerComplaintModel.getComplaintById(req.db, id);
+    if (!original) {
+      throw new NotFoundError('Complaint not found');
+    }
+
+    const record = await req.db.customerComplaint.update({
+      where: { id },
+      data: {
+        approvalStatus,
+        updatedBy: req.user?.username || req.user?.email || 'Admin',
+      },
+      include: {
+        images: {
+          select: { id: true, name: true, imageMimeType: true }
+        }
+      }
+    });
+
+    const actorContext = await getActorContext(req);
+    if (approvalStatus === 'Approved') {
+      eventBus.publish(SOCKET_EVENTS.COMPLAINT_CLOSED, {
+        referenceId: record.id,
+        referenceNumber: record.ccNo,
+        referenceType: "complaint",
+        ccNo: record.ccNo,
+        userId: req.user?.id,
+        actorContext
+      });
+    }
+
+    res.json({ success: true, data: record });
+  } catch (err) {
+    if (err.code === 'P2025') {
+      throw new NotFoundError('Complaint not found');
+    }
+    throw err;
+  }
+};
+
 
 export const remove = async (req, res) => {
   try {

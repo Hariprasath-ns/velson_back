@@ -1,6 +1,6 @@
 import express from 'express';
 import { dbSelect } from '../middlewares/dbSelect.js';
-import { getAll, getNextCode, getById, create, update, remove, upload, uploadFiles, downloadImage, removeImage } from '../controllers/customerComplaintController.js';
+import { getAll, getNextCode, getById, create, update, updateApprovalStatus, remove, upload, uploadFiles, downloadImage, removeImage } from '../controllers/customerComplaintController.js';
 
 const router = express.Router();
 
@@ -10,6 +10,8 @@ router.get('/customer-complaint/next-code', getNextCode);
 router.get('/customer-complaint/:id', getById);
 router.post('/customer-complaint', create);
 router.put('/customer-complaint/:id', update);
+router.patch('/customer-complaint/:id/approval', updateApprovalStatus);
+router.put('/customer-complaint/:id/approval', updateApprovalStatus);
 router.delete('/customer-complaint/:id', remove);
 
 router.post('/customer-complaint/:id/upload', upload.array('images', 10), uploadFiles);

@@ -18,7 +18,32 @@ const validateAdjustment = (adj) => {
 
 export const getAll = async (req, res) => {
   try {
-    const data = await StockAdjustmentModel.getAllStockAdjustments(req.db);
+    const rawData = await StockAdjustmentModel.getAllStockAdjustments(req.db);
+    const data = rawData.map(adj => {
+      let voucherNo = '';
+      const rem = String(adj.remarks || '').trim();
+      const parts = rem.split(/\s+-\s+/);
+      if (parts.length >= 2) {
+        const prefix = parts[0].toLowerCase();
+        if (prefix === 'qc inward') {
+          voucherNo = parts[1].trim();
+        } else if (prefix === 'grn inward') {
+          voucherNo = parts[1].replace(/\s*\([^)]*\)$/, '').trim();
+        }
+      }
+
+      if (!voucherNo) {
+        const patternMatch = rem.match(/([A-Za-z0-9_-]+\/GRN\d+|GR\d{2,4}-\d{2,4}\/\d+|\d{2}-\d{2}\/GRN\d+)/i);
+        if (patternMatch && patternMatch[1]) {
+          voucherNo = patternMatch[1].trim();
+        }
+      }
+
+      return {
+        ...adj,
+        voucherNo: voucherNo || (rem.toLowerCase().includes('opening stock') ? 'OPENING' : '—')
+      };
+    });
     res.json({ success: true, data });
   } catch (err) {
     throw err;

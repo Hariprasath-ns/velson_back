@@ -58,7 +58,7 @@ export const authenticate = async (req, res, next) => {
     }
 
     const token = header.slice(7);
-    
+
     // (1) Verify signature and expiration first
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 

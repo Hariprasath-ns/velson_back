@@ -28,23 +28,27 @@ export const getComplaintById = (db, id) =>
 
 export const getNextCCNo = async (db, yearStr) => {
   const prefix = `${yearStr}/CC`;
-  const likePattern = `${prefix}%`;
-  const regexPattern = `^${prefix}[0-9]+$`;
-  const startIndex = prefix.length + 1;
+  const records = await db.customerComplaint.findMany({
+    where: {
+      ccNo: {
+        startsWith: prefix
+      }
+    },
+    select: { ccNo: true }
+  });
 
-  const rows = await db.$queryRaw`
-    SELECT "ccNo" FROM customer_complaint
-    WHERE "ccNo" LIKE ${likePattern} AND "ccNo" ~ ${regexPattern}
-    ORDER BY CAST(SUBSTRING("ccNo" FROM ${startIndex}) AS INTEGER) DESC
-    LIMIT 1
-  `;
-  if (rows.length > 0) {
-    const lastCcNo = rows[0].ccNo;
-    const suffix = lastCcNo.slice(prefix.length);
-    const seq = parseInt(suffix, 10) || 0;
-    return `${prefix}${String(seq + 1).padStart(4, '0')}`;
+  let maxSeq = 0;
+  for (const r of records) {
+    if (r.ccNo && r.ccNo.startsWith(prefix)) {
+      const suffix = r.ccNo.slice(prefix.length);
+      const num = parseInt(suffix, 10);
+      if (!isNaN(num) && num > maxSeq) {
+        maxSeq = num;
+      }
+    }
   }
-  return `${prefix}0001`;
+
+  return `${prefix}${String(maxSeq + 1).padStart(4, '0')}`;
 };
 
 export const createComplaint = (db, data) =>

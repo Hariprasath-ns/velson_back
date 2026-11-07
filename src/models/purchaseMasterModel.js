@@ -17,10 +17,65 @@ export const getNextPoNo = async (db) => {
   return { poNo: `${fy}/PO00001`, financialYear: fy };
 };
 
-export const getAllPurchaseOrders = async (db, page = 1, limit = 20) => {
+export const getAllPurchaseOrders = async (db, optsOrPage = 1, maybeLimit = 20) => {
+  let page = 1;
+  let limit = 20;
+  let status = '';
+  let search = '';
+  let forGateEntry = false;
+  if (typeof optsOrPage === 'object' && optsOrPage !== null) {
+    page = parseInt(optsOrPage.page, 10) || 1;
+    limit = parseInt(optsOrPage.limit, 10) || 20;
+    status = (optsOrPage.status || '').trim();
+    search = (optsOrPage.search || '').trim();
+    forGateEntry = optsOrPage.forGateEntry === true || optsOrPage.forGateEntry === 'true';
+  } else {
+    page = parseInt(optsOrPage, 10) || 1;
+    limit = parseInt(maybeLimit, 10) || 20;
+  }
+
   const skip = (page - 1) * limit;
+
+  const where = {};
+  if (forGateEntry) {
+    const gatePoRows = await db.gateMaster.findMany({
+      where: { poNo: { not: null } },
+      distinct: ['poNo'],
+      select: { poNo: true },
+    });
+    const gatePoNos = gatePoRows.map(r => r.poNo).filter(Boolean);
+
+    where.AND = [
+      {
+        status: { notIn: ['Closed', 'closed', 'Draft', 'draft', 'Rejected', 'rejected', 'Cancelled', 'cancelled'] },
+      },
+      {
+        OR: [
+          { status: { in: ['Approved', 'Approval', 'approved', 'approval'] } },
+          ...(gatePoNos.length > 0 ? [{ status: { in: ['Pending', 'pending'] }, poNo: { in: gatePoNos } }] : []),
+        ],
+      },
+    ];
+  } else if (status) {
+    const isApproval = ['approved', 'approval'].includes(status.toLowerCase());
+    if (isApproval) {
+      where.status = { in: ['Approved', 'Approval', 'approved', 'approval'] };
+    } else {
+      where.status = { equals: status, mode: 'insensitive' };
+    }
+  }
+
+  if (search) {
+    where.OR = [
+      { poNo: { contains: search, mode: 'insensitive' } },
+      { supplierRefNo: { contains: search, mode: 'insensitive' } },
+      { supplier: { supplierName: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+
   const [data, total] = await Promise.all([
     db.purchaseMaster.findMany({
+      where,
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' },
@@ -60,7 +115,7 @@ export const getAllPurchaseOrders = async (db, page = 1, limit = 20) => {
         details: { orderBy: { slNo: 'asc' } },
       },
     }),
-    db.purchaseMaster.count()
+    db.purchaseMaster.count({ where })
   ]);
   return { data, total, page, limit };
 };

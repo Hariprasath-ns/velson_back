@@ -51,7 +51,10 @@ export const getAll = async (req, res) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 20;
-    const result = await POModel.getAllPurchaseOrders(req.db, page, limit);
+    const status = req.query.status || '';
+    const search = req.query.search || '';
+    const forGateEntry = req.query.forGateEntry === 'true' || req.query.forGateEntry === true;
+    const result = await POModel.getAllPurchaseOrders(req.db, { page, limit, status, search, forGateEntry });
     res.json({ success: true, ...result });
   } catch (err) {
     
@@ -257,7 +260,7 @@ export const update = async (req, res) => {
     const record = await POModel.updatePurchaseOrder(req.db, id, headerData, buildDetailRows(items));
 
     const actorContext = await getActorContext(req);
-    if (original && original.status !== record.status && record.status === 'Approved') {
+    if (original && original.status !== record.status && (record.status === 'Approved' || record.status === 'Approval')) {
       eventBus.publish(SOCKET_EVENTS.PURCHASE_ORDER_APPROVED, {
         referenceId: record.id,
         referenceNumber: record.poNo,

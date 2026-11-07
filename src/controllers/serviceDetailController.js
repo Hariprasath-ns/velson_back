@@ -3,6 +3,7 @@ import { BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, Conf
 import { eventBus } from '../services/eventBus.js';
 import { SOCKET_EVENTS } from '../utils/socketEvents.js';
 import { getActorContext } from '../utils/actorContext.js';
+import { checkBookingNotClosed } from '../utils/bookingCheck.js';
 
 
 export const getAll = async (req, res) => {
@@ -42,6 +43,9 @@ export const create = async (req, res) => {
     if (!serviceJobNo || !vehicleModelNo || !modelSubType || !vehicleName) {
       throw new BadRequestError('Required fields are missing');
     }
+
+    // Check if Booking Entry is closed against this serviceJobNo
+    await checkBookingNotClosed(req.db, serviceJobNo);
 
     const record = await Model.create(req.db, {
       serviceJobNo,
@@ -87,6 +91,10 @@ export const update = async (req, res) => {
       servicePartNo,
       checkedAssemblies
     } = req.body;
+
+    if (serviceJobNo) {
+      await checkBookingNotClosed(req.db, serviceJobNo);
+    }
 
     const original = await req.db.serviceDetail.findUnique({ where: { id } });
     const record = await Model.update(req.db, id, {
@@ -141,69 +149,6 @@ export const update = async (req, res) => {
 export const remove = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const existing = await req.db.serviceDetail.findUnique({ where: { id } });
-    
-    if (existing && existing.serviceJobNo) {
-      const remainingDetails = await req.db.serviceDetail.findMany({
-        where: {
-          serviceJobNo: existing.serviceJobNo,
-          NOT: { id: id },
-          NOT: { status: 'Inactive' }
-        }
-      });
-
-      if (remainingDetails.length === 0) {
-        // If no other active service details remain for this job, delete all spare records for this job
-        await req.db.serviceSpare.deleteMany({
-          where: { serviceJobNo: existing.serviceJobNo }
-        });
-      } else {
-        // Collect all assemblies remaining in other service details for this job
-        const remainingAssemblies = new Set();
-        remainingDetails.forEach(d => {
-          if (d.servicePartNo) {
-            remainingAssemblies.add(d.servicePartNo.trim().toLowerCase());
-            remainingAssemblies.add(d.servicePartNo.split(' - ')[0].trim().toLowerCase());
-          }
-          if (Array.isArray(d.checkedAssemblies)) {
-            d.checkedAssemblies.forEach(a => {
-              const str = String(a).trim().toLowerCase();
-              remainingAssemblies.add(str);
-              remainingAssemblies.add(str.split(' - ')[0].trim().toLowerCase());
-            });
-          }
-        });
-
-        // Find spare records for this job that are associated with the deleted service detail
-        const sparesForJob = await req.db.serviceSpare.findMany({
-          where: { serviceJobNo: existing.serviceJobNo }
-        });
-
-        const sparesToDelete = sparesForJob.filter(sp => {
-          const spPartNo = String(sp.servicePartNo || '').trim().toLowerCase();
-          const spPartClean = spPartNo.split(' - ')[0].trim().toLowerCase();
-          const spAssName = String(sp.lastSavedAssName || '').trim().toLowerCase();
-          const spAssClean = spAssName.split(' - ')[0].trim().toLowerCase();
-
-          const stillPresent = (
-            (spPartNo && remainingAssemblies.has(spPartNo)) ||
-            (spPartClean && remainingAssemblies.has(spPartClean)) ||
-            (spAssName && remainingAssemblies.has(spAssName)) ||
-            (spAssClean && remainingAssemblies.has(spAssClean))
-          );
-          return !stillPresent;
-        });
-
-        if (sparesToDelete.length > 0) {
-          await req.db.serviceSpare.deleteMany({
-            where: {
-              id: { in: sparesToDelete.map(s => s.id) }
-            }
-          });
-        }
-      }
-    }
-
     await Model.remove(req.db, id);
     res.json({ success: true });
   } catch (err) {

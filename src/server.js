@@ -61,6 +61,10 @@ import outsourcePartsRoute from "./routes/outsourcePartsRoute.js";
 import creditSalesRoute from "./routes/creditSalesRoute.js";
 import serviceBillRoute from "./routes/serviceBillRoute.js";
 import indexCreationRoute from "./routes/indexCreationRoute.js";
+import stockLiabilityRoute from "./routes/stockLiabilityRoute.js";
+import qcInspectionCharRoute from "./routes/qcInspectionCharRoute.js";
+import qcEntryAgainstGrnRoute from "./routes/qcEntryAgainstGrnRoute.js";
+import materialInwardRoute from "./routes/materialInwardRoute.js";
 
 
 
@@ -165,6 +169,10 @@ app.use("/api", outsourcePartsRoute);
 app.use("/api", creditSalesRoute);
 app.use("/api", serviceBillRoute);
 app.use("/api", indexCreationRoute);
+app.use("/api", stockLiabilityRoute);
+app.use("/api", qcInspectionCharRoute);
+app.use("/api", qcEntryAgainstGrnRoute);
+app.use("/api", materialInwardRoute);
 
 
 

@@ -970,6 +970,65 @@ model QCCheckMethod {
   @@map("qc_check_method")
 }
 
+model QCInspectionChar {
+  id            Int      @id @default(autoincrement())
+  docNo         String?
+  itemType      String?
+  brand         String?
+  partNo        String?
+  partName      String?
+  uom           String?
+  rmChar        String?
+  tolerance     String?
+  minValue      String?
+  maxValue      String?
+  equal         String?
+  text          String?
+  checkMethod   String?
+  specification String?
+  specType      String?
+  orderNo       String?
+  revNo         String?  @default("R1")
+  revDated      String?
+  status        String   @default("Active")
+  createdBy     String?  @default("Admin")
+  updatedBy     String?  @default("Admin")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("qc_inspection_char")
+}
+
+model QCEntryAgainstGRN {
+  id                   Int      @id @default(autoincrement())
+  qcNo                 String?  @unique
+  qcDate               DateTime @default(now())
+  grnNo                String
+  grnDate              String?
+  grnType              String?
+  invoiceNo            String?
+  invoiceDate          String?
+  supplierName         String?
+  supplierAddress      String?
+  itemCode             String
+  itemName             String?
+  uom                  String?
+  grnQty               Float    @default(0)
+  acceptedQty          Float    @default(0)
+  rejectedQty          Float    @default(0)
+  reworkQty            Float    @default(0)
+  qcStatus             String   @default("QC OK")
+  approvalStatus       String?  @default("Pending Approval")
+  remarks              String?
+  barcode              String?
+  inspectedBy          String?  @default("Quality Inspector")
+  inspectionParameters Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("qc_entry_against_grn")
+}
+
 model PartUsageList {
   id           Int      @id @default(autoincrement())
   partNo       String
@@ -1179,6 +1238,7 @@ model CustomerComplaint {
   preventiveMeasure    String?
   feedbackSatisfaction String?
   status               String                   @default("Open")
+  approvalStatus       String?                  @default("Pending Approval")
   vehicleCount         String?
   createdBy            String?                  @default("Admin")
   updatedBy            String?                  @default("Admin")
